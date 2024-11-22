@@ -3243,8 +3243,7 @@ function Library:CreateWindow(...)
 		Config.Title = Arguments[1]
 		Config.AutoShow = Arguments[2] or false;
 	end
-		    Config.ShowCustomCursor = false
-    Library.ShowCustomCursor = false
+
 	if type(Config.Title) ~= 'string' then Config.Title = 'No title' end
 	if type(Config.TabPadding) ~= 'number' then Config.TabPadding = 1 end
 	if type(Config.MenuFadeTime) ~= 'number' then Config.MenuFadeTime = 0.2 end
@@ -3919,35 +3918,7 @@ function Library:CreateWindow(...)
 			Outer.Visible = true;
 
 			if Library.ShowCustomCursor and Drawing then
-				local Cursor = Drawing.new("Triangle")
-				Cursor.Thickness = 1
-				Cursor.Filled = true
-				Cursor.Visible = true
-				local CursorOutline = Drawing.new("Triangle")
-				CursorOutline.Thickness = 1
-				CursorOutline.Filled = false
-				CursorOutline.Color = Color3.new(0, 0, 0)
-				CursorOutline.Visible = true
 				
-				local OldMouseIconState = InputService.MouseIconEnabled
-				RunService:BindToRenderStep("LinoriaCursor", Enum.RenderPriority.Camera.Value - 1, function()
-					InputService.MouseIconEnabled = false
-					local mPos = InputService:GetMouseLocation()
-					local X, Y = mPos.X, mPos.Y
-					Cursor.Color = Library.AccentColor
-					Cursor.PointA = Vector2.new(X, Y)
-					Cursor.PointB = Vector2.new(X + 16, Y + 6)
-					Cursor.PointC = Vector2.new(X + 6, Y + 16)
-					CursorOutline.PointA = Cursor.PointA
-					CursorOutline.PointB = Cursor.PointB
-					CursorOutline.PointC = Cursor.PointC
-					if not (Toggled and ScreenGui.Parent and Library.ShowCustomCursor) then
-						InputService.MouseIconEnabled = OldMouseIconState
-						Cursor:Destroy()
-						CursorOutline:Destroy()
-						RunService:UnbindFromRenderStep("LinoriaCursor")
-					end
-				end)
 			end
 		end;
 
