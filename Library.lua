@@ -3243,7 +3243,8 @@ function Library:CreateWindow(...)
 		Config.Title = Arguments[1]
 		Config.AutoShow = Arguments[2] or false;
 	end
-
+		    Config.ShowCustomCursor = false
+    Library.ShowCustomCursor = false
 	if type(Config.Title) ~= 'string' then Config.Title = 'No title' end
 	if type(Config.TabPadding) ~= 'number' then Config.TabPadding = 1 end
 	if type(Config.MenuFadeTime) ~= 'number' then Config.MenuFadeTime = 0.2 end
