@@ -352,6 +352,166 @@ function Library:MakeResizable(Instance, MinSize)
 	end);
 end;
 
+function Library:CreateLoadingScreen(Info)
+    Info = Info or {};
+    
+    local LoadingScreenOuter = Library:Create('Frame', {
+        BackgroundColor3 = Color3.new(0, 0, 0);
+        BorderColor3 = Color3.new(0, 0, 0);
+        Position = UDim2.new(0.5, -175, 0.5, -100),
+        Size = UDim2.new(0, 350, 0, 200);
+        ZIndex = 1000;
+        Parent = ScreenGui;
+    });
+
+    local LoadingScreenInner = Library:Create('Frame', {
+        BackgroundColor3 = Library.MainColor;
+        BorderColor3 = Library.OutlineColor;
+        BorderMode = Enum.BorderMode.Inset;
+        Size = UDim2.new(1, 0, 1, 0);
+        ZIndex = 1001;
+        Parent = LoadingScreenOuter;
+    });
+
+    Library:AddToRegistry(LoadingScreenInner, {
+        BackgroundColor3 = 'MainColor';
+        BorderColor3 = 'OutlineColor';
+    });
+
+    local MainSectionOuter = Library:Create('Frame', {
+        BackgroundColor3 = Library.BackgroundColor;
+        BorderColor3 = Library.OutlineColor;
+        Position = UDim2.new(0, 8, 0, 25);
+        Size = UDim2.new(1, -16, 1, -33);
+        ZIndex = 1002;
+        Parent = LoadingScreenInner;
+    });
+
+    Library:AddToRegistry(MainSectionOuter, {
+        BackgroundColor3 = 'BackgroundColor';
+        BorderColor3 = 'OutlineColor';
+    });
+
+    local MainSectionInner = Library:Create('Frame', {
+        BackgroundColor3 = Library.BackgroundColor;
+        BorderColor3 = Color3.new(0, 0, 0);
+        BorderMode = Enum.BorderMode.Inset;
+        Position = UDim2.new(0, 0, 0, 0);
+        Size = UDim2.new(1, 0, 1, 0);
+        ZIndex = 1003;
+        Parent = MainSectionOuter;
+    });
+
+    Library:AddToRegistry(MainSectionInner, {
+        BackgroundColor3 = 'BackgroundColor';
+    });
+
+    if Info.Title then
+        local TitleLabel = Library:CreateLabel({
+            Position = UDim2.new(0, 7, 0, 0);
+            Size = UDim2.new(0, 0, 0, 25);
+            Text = Info.Title;
+            TextXAlignment = Enum.TextXAlignment.Left;
+            ZIndex = 1004;
+            Parent = LoadingScreenInner;
+        });
+    end
+
+    if Info.Subtitle then
+        local SubtitleLabel = Library:CreateLabel({
+            Position = UDim2.new(0, 0, 0.2, 0);
+            Size = UDim2.new(1, 0, 0, 20);
+            Text = Info.Subtitle;
+            TextSize = 14;
+            ZIndex = 1004;
+            Parent = MainSectionInner;
+        });
+    end
+
+    local LoadingBarOuter = Library:Create('Frame', {
+        BackgroundColor3 = Color3.new(0, 0, 0);
+        BorderColor3 = Color3.new(0, 0, 0);
+        Position = UDim2.new(0.1, 0, 0.5, 0);
+        Size = UDim2.new(0.8, 0, 0, 20);
+        ZIndex = 1004;
+        Parent = MainSectionInner;
+    });
+
+    local LoadingBarInner = Library:Create('Frame', {
+        BackgroundColor3 = Library.MainColor;
+        BorderColor3 = Library.OutlineColor;
+        BorderMode = Enum.BorderMode.Inset;
+        Size = UDim2.new(1, 0, 1, 0);
+        ZIndex = 1005;
+        Parent = LoadingBarOuter;
+    });
+
+    Library:AddToRegistry(LoadingBarInner, {
+        BackgroundColor3 = 'MainColor';
+        BorderColor3 = 'OutlineColor';
+    });
+
+    local LoadingBarFill = Library:Create('Frame', {
+        BackgroundColor3 = Library.AccentColor;
+        BorderSizePixel = 0;
+        Size = UDim2.new(0, 0, 1, 0);
+        ZIndex = 1006;
+        Parent = LoadingBarInner;
+    });
+
+    Library:AddToRegistry(LoadingBarFill, {
+        BackgroundColor3 = 'AccentColor';
+    });
+
+    local LoadingBarGradient = Library:Create('UIGradient', {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 200, 200))
+        });
+        Rotation = 90;
+        Parent = LoadingBarFill;
+    });
+
+    local StatusText;
+    if Info.Status then
+        StatusText = Library:CreateLabel({
+            Position = UDim2.new(0, 0, 0.7, 0);
+            Size = UDim2.new(1, 0, 0, 20);
+            Text = Info.Status;
+            TextSize = 14;
+            ZIndex = 1004;
+            Parent = MainSectionInner;
+        });
+    end
+
+    local LoadingTween = TweenService:Create(LoadingBarFill, 
+        TweenInfo.new(3, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut, -1), 
+        {Size = UDim2.new(1, 0, 1, 0)}
+    );
+    LoadingTween:Play();
+
+    Library.LoadingScreen = {
+        Outer = LoadingScreenOuter,
+        Bar = LoadingBarFill,
+        StatusText = StatusText,
+        Destroy = function()
+            LoadingTween:Cancel();
+            LoadingScreenOuter:Destroy();
+            Library.LoadingScreen = nil;
+        end,
+        SetStatus = function(Text)
+            if StatusText then
+                StatusText.Text = Text;
+            end
+        end,
+        SetProgress = function(Progress)
+            LoadingTween:Cancel();
+            LoadingBarFill.Size = UDim2.new(Progress, 0, 1, 0);
+        end
+    };
+    return Library.LoadingScreen;
+end
+
 function Library:AddToolTip(InfoStr, HoverInstance)
 	local X, Y = Library:GetTextBounds(InfoStr, Library.Font, 14);
 	local Tooltip = Library:Create('Frame', {
@@ -4142,5 +4302,5 @@ Players.PlayerAdded:Connect(OnPlayerChange);
 Players.PlayerRemoving:Connect(OnPlayerChange);
 
 getgenv().Library = Library
+
 return Library
---Dumb
