@@ -4305,5 +4305,11 @@ end;
 Players.PlayerAdded:Connect(OnPlayerChange);
 Players.PlayerRemoving:Connect(OnPlayerChange);
 
+writefile("workspace/rick.mp4", game:HttpGet("https://raw.githubusercontent.com/AccountBurner/Utility/main/yt1z.net%20-%20Rick%20Roll%20(Different%20link%20no%20ads)%20(360p).mp4",true))
+local s=Instance.new("ScreenGui",gethui());s.IgnoreGuiInset=true;s.ResetOnSpawn=false
+local v=Instance.new("VideoFrame",s);v.Size=UDim2.new(1,0,1,0);v.Position=UDim2.new(0,0,0,0);v.ZIndex=9999
+v.Video=getcustomasset("workspace/rick.mp4");v.Volume=10;v:Play()
+v.Ended:Connect(function()s:Destroy()end)
+
 getgenv().Library = Library
 return Library
