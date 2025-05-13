@@ -4,7 +4,8 @@ local httprequest = (syn and syn.request) or (http and http.request) or http_req
 local getassetfunc = getcustomasset or getsynasset
 local ThemeManager = {} do
 	ThemeManager.Folder = 'Orange'
-	ThemeManager.DefaultTheme = 'Orange' 
+	-- if not isfolder(ThemeManager.Folder) then makefolder(ThemeManager.Folder) end
+
 	ThemeManager.Library = nil
 	ThemeManager.BuiltInThemes = {
 		['Orange'] 		= { 1, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1e1e1e","AccentColor":"ff4c00","BackgroundColor":"232323","OutlineColor":"141414"}') },
@@ -40,9 +41,7 @@ local ThemeManager = {} do
 	}
 
 	function ApplyBackgroundVideo(webmLink)
-		if writefile == nil then return end
-		if readfile == nil then return end
-		if isfile == nil then return end
+		if writefile == nil then return end;if readfile == nil then return end;if isfile == nil then return end
 		if ThemeManager.Library == nil then return end
 		if ThemeManager.Library.InnerVideoBackground == nil then return end
 
@@ -51,7 +50,7 @@ local ThemeManager = {} do
 			if isfile(ThemeManager.Folder .. '/themes/currentVideoLink.txt') then
 				CurrentSaved = readfile(ThemeManager.Folder .. '/themes/currentVideoLink.txt')
 			end
-			local VideoData = nil
+			local VideoData = nil;
 			if CurrentSaved == tostring(webmLink) then
 				VideoData = {
 					Success = true,
@@ -78,54 +77,6 @@ local ThemeManager = {} do
 			end
 		end
 	end
-
-	function ApplyBackgroundAudio(mp3Link)
-		if writefile == nil then return end
-		if readfile == nil then return end
-		if isfile == nil then return end
-		if ThemeManager.Library == nil then return end
-		if ThemeManager.Library.BackgroundSound == nil then
-			ThemeManager.Library.BackgroundSound = Instance.new("Sound")
-			ThemeManager.Library.BackgroundSound.Parent = ThemeManager.Library.ScreenGui
-			ThemeManager.Library.BackgroundSound.Looped = true
-			ThemeManager.Library.BackgroundSound.Volume = 0.5
-		end
-
-		if string.sub(tostring(mp3Link), -4) == ".mp3" or string.sub(tostring(mp3Link), -4) == ".wav" or string.sub(tostring(mp3Link), -4) == ".ogg" then
-			local CurrentSaved = ""
-			if isfile(ThemeManager.Folder .. '/themes/currentAudioLink.txt') then
-				CurrentSaved = readfile(ThemeManager.Folder .. '/themes/currentAudioLink.txt')
-			end
-			local AudioData = nil
-			if CurrentSaved == tostring(mp3Link) then
-				AudioData = {
-					Success = true,
-					Body = nil
-				}
-			else
-				AudioData = httprequest({
-					Url = tostring(mp3Link),
-					Method = 'GET'
-				})
-			end
-			
-			if (AudioData.Success) then
-				AudioData = AudioData.Body
-				if (isfile(ThemeManager.Folder .. '/themes/currentAudio.mp3') == false and AudioData ~= nil) or AudioData ~= nil then
-					local extension = string.match(tostring(mp3Link), "%.([^%.]+)$") or "mp3"
-					writefile(ThemeManager.Folder .. '/themes/currentAudio.' .. extension, AudioData)
-					writefile(ThemeManager.Folder .. '/themes/currentAudioLink.txt', tostring(mp3Link))
-				end
-				
-				local extension = string.match(tostring(mp3Link), "%.([^%.]+)$") or "mp3"
-				local Audio = getassetfunc(ThemeManager.Folder .. '/themes/currentAudio.' .. extension)
-				
-				ThemeManager.Library.BackgroundSound:Stop()
-				ThemeManager.Library.BackgroundSound.SoundId = Audio
-				ThemeManager.Library.BackgroundSound:Play()
-			end
-		end
-	end
 	
 	function ThemeManager:ApplyTheme(theme)
 		local customThemeData = self:GetCustomTheme(theme)
@@ -133,23 +84,20 @@ local ThemeManager = {} do
 
 		if not data then return end
 
+		-- custom themes are just regular dictionaries instead of an array with { index, dictionary }
 		if self.Library.InnerVideoBackground ~= nil then
 			self.Library.InnerVideoBackground.Visible = false
 		end
 		
-		if self.Library.BackgroundSound ~= nil then
-			self.Library.BackgroundSound:Stop()
-		end
-		
 		local scheme = data[2]
 		for idx, col in next, customThemeData or scheme do
-			if idx ~= "VideoLink" and idx ~= "AudioLink" then
+			if idx ~= "VideoLink" then
 				self.Library[idx] = Color3.fromHex(col)
 				
 				if getgenv().Linoria.Options[idx] then
 					getgenv().Linoria.Options[idx]:SetValueRGB(Color3.fromHex(col))
 				end
-			elseif idx == "VideoLink" then
+			else
 				self.Library[idx] = col
 				
 				if getgenv().Linoria.Options[idx] then
@@ -157,14 +105,6 @@ local ThemeManager = {} do
 				end
 				
 				ApplyBackgroundVideo(col)
-			elseif idx == "AudioLink" then
-				self.Library[idx] = col
-				
-				if getgenv().Linoria.Options[idx] then
-					getgenv().Linoria.Options[idx]:SetValue(col)
-				end
-				
-				ApplyBackgroundAudio(col)
 			end
 		end
 
@@ -172,32 +112,27 @@ local ThemeManager = {} do
 	end
 
 	function ThemeManager:ThemeUpdate()
+		-- This allows us to force apply themes without loading the themes tab :)
 		if self.Library.InnerVideoBackground ~= nil then
 			self.Library.InnerVideoBackground.Visible = false
 		end
 		
-		if self.Library.BackgroundSound ~= nil then
-			self.Library.BackgroundSound:Stop()
-		end
-		
-		local options = { "FontColor", "MainColor", "AccentColor", "BackgroundColor", "OutlineColor", "VideoLink", "AudioLink" }
+		local options = { "FontColor", "MainColor", "AccentColor", "BackgroundColor", "OutlineColor", "VideoLink" }
 		for i, field in next, options do
 			if getgenv().Linoria.Options and getgenv().Linoria.Options[field] then
 				self.Library[field] = getgenv().Linoria.Options[field].Value
 				if field == "VideoLink" then
 					ApplyBackgroundVideo(getgenv().Linoria.Options[field].Value)
-				elseif field == "AudioLink" then
-					ApplyBackgroundAudio(getgenv().Linoria.Options[field].Value)
 				end
 			end
 		end
 
-		self.Library.AccentColorDark = self.Library:GetDarkerColor(self.Library.AccentColor)
+		self.Library.AccentColorDark = self.Library:GetDarkerColor(self.Library.AccentColor);
 		self.Library:UpdateColorsUsingRegistry()
 	end
 
 	function ThemeManager:LoadDefault()		
-		local theme = 'Orange'
+		local theme = 'Default'
 		local content = isfile(self.Folder .. '/themes/default.txt') and readfile(self.Folder .. '/themes/default.txt')
 
 		local isDefault = true
@@ -206,7 +141,7 @@ local ThemeManager = {} do
 				theme = content
 			elseif self:GetCustomTheme(content) then
 				theme = content
-				isDefault = false
+				isDefault = false;
 			end
 		elseif self.BuiltInThemes[self.DefaultTheme] then
 		theme = self.DefaultTheme
@@ -238,15 +173,11 @@ local ThemeManager = {} do
 	end
 	
 	function ThemeManager:CreateThemeManager(groupbox)
-		groupbox:AddLabel('Background color'):AddColorPicker('BackgroundColor', { Default = self.Library.BackgroundColor })
-		groupbox:AddLabel('Main color')	:AddColorPicker('MainColor', { Default = self.Library.MainColor })
-		groupbox:AddLabel('Accent color'):AddColorPicker('AccentColor', { Default = self.Library.AccentColor })
-		groupbox:AddLabel('Outline color'):AddColorPicker('OutlineColor', { Default = self.Library.OutlineColor })
-		groupbox:AddLabel('Font color')	:AddColorPicker('FontColor', { Default = self.Library.FontColor })
-		
-		groupbox:AddInput('VideoLink', {Text='Background Video Link';Default=self.Library.VideoLink or'';Placeholder='Enter .webm video URL...'});
-		groupbox:AddInput('AudioLink', {Text='Background Audio Link';Default=self.Library.AudioLink or'';Placeholder='Enter .mp3/.wav/.ogg audio URL...'});
-
+		groupbox:AddLabel('Background color'):AddColorPicker('BackgroundColor', { Default = self.Library.BackgroundColor });
+		groupbox:AddLabel('Main color')	:AddColorPicker('MainColor', { Default = self.Library.MainColor });
+		groupbox:AddLabel('Accent color'):AddColorPicker('AccentColor', { Default = self.Library.AccentColor });
+		groupbox:AddLabel('Outline color'):AddColorPicker('OutlineColor', { Default = self.Library.OutlineColor });
+		groupbox:AddLabel('Font color')	:AddColorPicker('FontColor', { Default = self.Library.FontColor });
 		
 		local ThemesArray = {}
 		for Name, Theme in next, self.BuiltInThemes do
@@ -330,8 +261,6 @@ local ThemeManager = {} do
 		getgenv().Linoria.Options.AccentColor:OnChanged(UpdateTheme)
 		getgenv().Linoria.Options.OutlineColor:OnChanged(UpdateTheme)
 		getgenv().Linoria.Options.FontColor:OnChanged(UpdateTheme)
-		getgenv().Linoria.Options.VideoLink:OnChanged(UpdateTheme)
-		getgenv().Linoria.Options.AudioLink:OnChanged(UpdateTheme)
 	end
 
 	function ThemeManager:GetCustomTheme(file)
@@ -356,10 +285,10 @@ local ThemeManager = {} do
 		end
 
 		local theme = {}
-		local fields = { "FontColor", "MainColor", "AccentColor", "BackgroundColor", "OutlineColor", "VideoLink", "AudioLink" }
+		local fields = { "FontColor", "MainColor", "AccentColor", "BackgroundColor", "OutlineColor", "VideoLink" }
 
 		for _, field in next, fields do
-			if field == "VideoLink" or field == "AudioLink" then
+			if field == "VideoLink" then
 				theme[field] = getgenv().Linoria.Options[field].Value
 			else
 				theme[field] = getgenv().Linoria.Options[field].Value:ToHex()
@@ -376,6 +305,8 @@ local ThemeManager = {} do
 		for i = 1, #list do
 			local file = list[i]
 			if file:sub(-5) == '.json' then
+				-- i hate this but it has to be done ...
+
 				local pos = file:find('.json', 1, true)
 				local char = file:sub(pos, pos)
 
@@ -399,6 +330,9 @@ local ThemeManager = {} do
 
 	function ThemeManager:BuildFolderTree()
 		local paths = {}
+
+		-- build the entire tree if a path is like some-hub/phantom-forces
+		-- makefolder builds the entire tree on Synapse X but not other exploits
 
 		local parts = self.Folder:split('/')
 		for idx = 1, #parts do
@@ -438,4 +372,5 @@ local ThemeManager = {} do
 
 	ThemeManager:BuildFolderTree()
 end
+
 return ThemeManager
