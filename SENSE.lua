@@ -1,3 +1,10 @@
+-- Enhanced ESP System with Instance Support
+-- Original code enhanced with NPC/Instance drawing capabilities and better weapon detection
+
+-- Load utilities
+local Maid = loadstring(game:HttpGet("https://raw.githubusercontent.com/AccountBurner/Utility/refs/heads/main/Maid.lua"))()
+local Signal = loadstring(game:HttpGet("https://raw.githubusercontent.com/AccountBurner/Utility/refs/heads/main/Signal"))()
+
 -- services
 local runService = game:GetService("RunService");
 local players = game:GetService("Players");
@@ -108,6 +115,7 @@ function EspObject.new(player, interface)
 	local self = setmetatable({}, EspObject);
 	self.player = assert(player, "Missing argument #1 (Player expected)");
 	self.interface = assert(interface, "Missing argument #2 (table expected)");
+	self.maid = Maid.new();
 	self:Construct();
 	return self;
 end
@@ -162,6 +170,8 @@ function EspObject:Construct()
 		self:Update(deltaTime);
 		self:Render(deltaTime);
 	end);
+	
+	self.maid:AddTask(self.renderConnection);
 end
 
 function EspObject:create(class, properties)
@@ -170,16 +180,12 @@ function EspObject:create(class, properties)
 		drawing[property] = value;
 	end
 	self.bin[#self.bin + 1] = drawing;
+	self.maid:AddTask(drawing);
 	return drawing;
 end
 
 function EspObject:Destruct()
-	self.renderConnection:Disconnect();
-
-	for _, drawing in next, self.bin do
-		drawing:Remove();
-	end
-
+	self.maid:Cleanup();
 	clear(self);
 end
 
@@ -413,21 +419,24 @@ function ChamObject.new(player, interface)
 	local self = setmetatable({}, ChamObject);
 	self.player = assert(player, "Missing argument #1 (Player expected)");
 	self.interface = assert(interface, "Missing argument #2 (table expected)");
+	self.maid = Maid.new();
 	self:Construct();
 	return self;
 end
 
 function ChamObject:Construct()
 	self.highlight = Instance.new("Highlight", container);
+	self.maid:AddTask(self.highlight);
+	
 	self.updateConnection = runService.Heartbeat:Connect(function()
 		self:Update();
 	end);
+	
+	self.maid:AddTask(self.updateConnection);
 end
 
 function ChamObject:Destruct()
-	self.updateConnection:Disconnect();
-	self.highlight:Destroy();
-
+	self.maid:Cleanup();
 	clear(self);
 end
 
@@ -450,7 +459,341 @@ function ChamObject:Update()
 	end
 end
 
--- instance class
+-- Enhanced Instance ESP Object for NPCs and custom instances
+local InstanceEspObject = {};
+InstanceEspObject.__index = InstanceEspObject;
+
+function InstanceEspObject.new(instance, interface, customOptions)
+	local self = setmetatable({}, InstanceEspObject);
+	self.instance = assert(instance, "Missing argument #1 (Instance expected)");
+	self.interface = assert(interface, "Missing argument #2 (table expected)");
+	self.customOptions = customOptions or {};
+	self.maid = Maid.new();
+	self:Construct();
+	return self;
+end
+
+function InstanceEspObject:Construct()
+	self.charCache = {};
+	self.childCount = 0;
+	self.bin = {};
+	
+	-- Create drawing objects with customizable options
+	self.drawings = {
+		box3d = {},
+		visible = {
+			tracerOutline = self:create("Line", { Thickness = 3, Visible = false }),
+			tracer = self:create("Line", { Thickness = 1, Visible = false }),
+			boxFill = self:create("Square", { Filled = true, Visible = false }),
+			boxOutline = self:create("Square", { Thickness = 3, Visible = false }),
+			box = self:create("Square", { Thickness = 1, Visible = false }),
+			healthBarOutline = self:create("Line", { Thickness = 3, Visible = false }),
+			healthBar = self:create("Line", { Thickness = 1, Visible = false }),
+			healthText = self:create("Text", { Center = true, Visible = false }),
+			name = self:create("Text", { Text = self.instance.Name, Center = true, Visible = false }),
+			distance = self:create("Text", { Center = true, Visible = false }),
+			customText = self:create("Text", { Center = true, Visible = false }),
+		},
+		hidden = {
+			arrowOutline = self:create("Triangle", { Thickness = 3, Visible = false }),
+			arrow = self:create("Triangle", { Filled = true, Visible = false })
+		}
+	};
+	
+	-- Create 3D box if enabled
+	if self.customOptions.box3d then
+		for i = 1, 4 do
+			self.drawings.box3d[i] = {
+				self:create("Line", { Thickness = 1, Visible = false }),
+				self:create("Line", { Thickness = 1, Visible = false }),
+				self:create("Line", { Thickness = 1, Visible = false })
+			};
+		end
+	end
+
+	self.renderConnection = runService.Heartbeat:Connect(function(deltaTime)
+		self:Update(deltaTime);
+		self:Render(deltaTime);
+	end);
+	
+	self.maid:AddTask(self.renderConnection);
+end
+
+function InstanceEspObject:create(class, properties)
+	local drawing = Drawing.new(class);
+	for property, value in next, properties do
+		drawing[property] = value;
+	end
+	self.bin[#self.bin + 1] = drawing;
+	self.maid:AddTask(drawing);
+	return drawing;
+end
+
+function InstanceEspObject:Destruct()
+	self.maid:Cleanup();
+	clear(self);
+end
+
+function InstanceEspObject:Update()
+	if not self.instance or not self.instance.Parent then
+		return self:Destruct();
+	end
+	
+	local interface = self.interface;
+	local options = interface.instanceSettings or interface.teamSettings.enemy;
+	
+	-- Override with custom options
+	for key, value in pairs(self.customOptions) do
+		options[key] = value;
+	end
+	
+	self.options = options;
+	self.enabled = options.enabled;
+	
+	local primaryPart = self.instance:FindFirstChild("HumanoidRootPart") or self.instance:FindFirstChild("Primary") or self.instance:FindFirstChildOfClass("BasePart");
+	if not primaryPart then
+		return;
+	end
+	
+	local _, onScreen, depth = worldToScreen(primaryPart.Position);
+	self.onScreen = onScreen;
+	self.distance = depth;
+	
+	if interface.sharedSettings.limitDistance and depth > interface.sharedSettings.maxDistance then
+		self.onScreen = false;
+	end
+	
+	if self.onScreen then
+		local cache = self.charCache;
+		local children = getChildren(self.instance);
+		if not cache[1] or self.childCount ~= #children then
+			clear(cache);
+			
+			for i = 1, #children do
+				local part = children[i];
+				if isA(part, "BasePart") then
+					cache[#cache + 1] = part;
+				end
+			end
+			
+			self.childCount = #children;
+		end
+		
+		self.corners = calculateCorners(getBoundingBox(cache));
+	elseif options.offScreenArrow then
+		local _, yaw, roll = toOrientation(camera.CFrame);
+		local flatCFrame = CFrame.Angles(0, yaw, roll) + camera.CFrame.Position;
+		local objectSpace = pointToObjectSpace(flatCFrame, primaryPart.Position);
+		local angle = atan2(objectSpace.Z, objectSpace.X);
+		
+		self.direction = Vector2.new(cos(angle), sin(angle));
+	end
+	
+	-- Update health if available
+	local humanoid = self.instance:FindFirstChildOfClass("Humanoid");
+	if humanoid then
+		self.health = humanoid.Health;
+		self.maxHealth = humanoid.MaxHealth;
+	else
+		self.health = 100;
+		self.maxHealth = 100;
+	end
+end
+
+function InstanceEspObject:Render()
+	if not self.drawings or not self.drawings.visible then
+		return;
+	end
+	local onScreen = self.onScreen or false;
+	local enabled = self.enabled or false;
+	local visible = self.drawings.visible;
+	local hidden = self.drawings.hidden;
+	local box3d = self.drawings.box3d;
+	local interface = self.interface;
+	local options = self.options;
+	local corners = self.corners;
+	
+	visible.box.Visible = enabled and onScreen and options.box;
+	visible.boxOutline.Visible = visible.box.Visible and options.boxOutline;
+	if visible.box.Visible then
+		local box = visible.box;
+		box.Position = corners.topLeft;
+		box.Size = corners.bottomRight - corners.topLeft;
+		box.Color = options.boxColor[1];
+		box.Transparency = options.boxColor[2];
+		
+		local boxOutline = visible.boxOutline;
+		boxOutline.Position = box.Position;
+		boxOutline.Size = box.Size;
+		boxOutline.Color = options.boxOutlineColor[1];
+		boxOutline.Transparency = options.boxOutlineColor[2];
+	end
+	
+	visible.boxFill.Visible = enabled and onScreen and options.boxFill;
+	if visible.boxFill.Visible then
+		local boxFill = visible.boxFill;
+		boxFill.Position = corners.topLeft;
+		boxFill.Size = corners.bottomRight - corners.topLeft;
+		boxFill.Color = options.boxFillColor[1];
+		boxFill.Transparency = options.boxFillColor[2];
+	end
+		
+	visible.healthBar.Visible = enabled and onScreen and options.healthBar and self.health ~= nil;
+	visible.healthBarOutline.Visible = visible.healthBar.Visible and options.healthBarOutline;
+	if visible.healthBar.Visible then
+		if not corners then
+			visible.healthBar.Visible = false;
+			visible.healthBarOutline.Visible = false;
+			return;
+		end
+		
+		local barFrom = corners.topLeft - HEALTH_BAR_OFFSET;
+		local barTo = corners.bottomLeft - HEALTH_BAR_OFFSET;
+		
+		local healthRatio = 0;
+		if self.health and self.maxHealth and self.maxHealth > 0 then
+			healthRatio = math.max(0, math.min(1, self.health / self.maxHealth));
+		end
+		
+		local healthBar = visible.healthBar;
+		healthBar.To = Vector2.new(barTo.X, barTo.Y);
+		healthBar.From = Vector2.new(
+			lerp2(barTo, barFrom, healthRatio).X,
+			lerp2(barTo, barFrom, healthRatio).Y
+		);
+		healthBar.Color = lerpColor(options.dyingColor, options.healthyColor, healthRatio);
+		
+		if visible.healthBarOutline.Visible then
+			local healthBarOutline = visible.healthBarOutline;
+			local outlineFrom = barFrom - HEALTH_BAR_OUTLINE_OFFSET;
+			local outlineTo = barTo + HEALTH_BAR_OUTLINE_OFFSET;
+			healthBarOutline.To = Vector2.new(outlineTo.X, outlineTo.Y);
+			healthBarOutline.From = Vector2.new(outlineFrom.X, outlineFrom.Y);
+			healthBarOutline.Color = options.healthBarOutlineColor[1];
+			healthBarOutline.Transparency = options.healthBarOutlineColor[2];
+		end
+	end
+	
+	visible.healthText.Visible = enabled and onScreen and options.healthText and self.health;
+	if visible.healthText.Visible then
+		local barFrom = corners.topLeft - HEALTH_BAR_OFFSET;
+		local barTo = corners.bottomLeft - HEALTH_BAR_OFFSET;
+		
+		local healthText = visible.healthText;
+		healthText.Text = round(self.health) .. "hp";
+		healthText.Size = interface.sharedSettings.textSize;
+		healthText.Font = interface.sharedSettings.textFont;
+		healthText.Color = options.healthTextColor[1];
+		healthText.Transparency = options.healthTextColor[2];
+		healthText.Outline = options.healthTextOutline;
+		healthText.OutlineColor = options.healthTextOutlineColor;
+		healthText.Position = lerp2(barTo, barFrom, self.health/self.maxHealth) - healthText.TextBounds*0.5 - HEALTH_TEXT_OFFSET;
+	end
+	
+	visible.name.Visible = enabled and onScreen and options.name;
+	if visible.name.Visible then
+		local name = visible.name;
+		name.Size = interface.sharedSettings.textSize;
+		name.Font = interface.sharedSettings.textFont;
+		name.Color = options.nameColor[1];
+		name.Transparency = options.nameColor[2];
+		name.Outline = options.nameOutline;
+		name.OutlineColor = options.nameOutlineColor;
+		name.Position = (corners.topLeft + corners.topRight)*0.5 - Vector2.yAxis*name.TextBounds.Y - NAME_OFFSET;
+	end
+	
+	visible.distance.Visible = enabled and onScreen and self.distance and options.distance;
+	if visible.distance.Visible then
+		local distance = visible.distance;
+		distance.Text = round(self.distance) .. " studs";
+		distance.Size = interface.sharedSettings.textSize;
+		distance.Font = interface.sharedSettings.textFont;
+		distance.Color = options.distanceColor[1];
+		distance.Transparency = options.distanceColor[2];
+		distance.Outline = options.distanceOutline;
+		distance.OutlineColor = options.distanceOutlineColor;
+		distance.Position = (corners.bottomLeft + corners.bottomRight)*0.5 + DISTANCE_OFFSET;
+	end
+	
+	visible.customText.Visible = enabled and onScreen and options.customText;
+	if visible.customText.Visible then
+		local customText = visible.customText;
+		customText.Text = options.customTextValue or "";
+		customText.Size = interface.sharedSettings.textSize;
+		customText.Font = interface.sharedSettings.textFont;
+		customText.Color = options.customTextColor[1];
+		customText.Transparency = options.customTextColor[2];
+		customText.Outline = options.customTextOutline;
+		customText.OutlineColor = options.customTextOutlineColor;
+		customText.Position = 
+			(corners.bottomLeft + corners.bottomRight)*0.5 +
+			(visible.distance.Visible and DISTANCE_OFFSET + Vector2.yAxis*visible.distance.TextBounds.Y or Vector2.zero);
+	end
+	
+	visible.tracer.Visible = enabled and onScreen and options.tracer;
+	visible.tracerOutline.Visible = visible.tracer.Visible and options.tracerOutline;
+	if visible.tracer.Visible then
+		local tracer = visible.tracer;
+		tracer.Color = options.tracerColor[1];
+		tracer.Transparency = options.tracerColor[2];
+		tracer.To = (corners.bottomLeft + corners.bottomRight)*0.5;
+		tracer.From =
+			options.tracerOrigin == "Middle" and viewportSize*0.5 or
+			options.tracerOrigin == "Top" and viewportSize*Vector2.new(0.5, 0) or
+			options.tracerOrigin == "Bottom" and viewportSize*Vector2.new(0.5, 1);
+		
+		local tracerOutline = visible.tracerOutline;
+		tracerOutline.Color = options.tracerOutlineColor[1];
+		tracerOutline.Transparency = options.tracerOutlineColor[2];
+		tracerOutline.To = tracer.To;
+		tracerOutline.From = tracer.From;
+	end
+	
+	hidden.arrow.Visible = enabled and (not onScreen) and options.offScreenArrow;
+	hidden.arrowOutline.Visible = hidden.arrow.Visible and options.offScreenArrowOutline;
+	if hidden.arrow.Visible then
+		local arrow = hidden.arrow;
+		arrow.PointA = min2(max2(viewportSize*0.5 + self.direction*options.offScreenArrowRadius, Vector2.one*25), viewportSize - Vector2.one*25);
+		arrow.PointB = arrow.PointA - rotateVector(self.direction, 0.45)*options.offScreenArrowSize;
+		arrow.PointC = arrow.PointA - rotateVector(self.direction, -0.45)*options.offScreenArrowSize;
+		arrow.Color = options.offScreenArrowColor[1];
+		arrow.Transparency = options.offScreenArrowColor[2];
+		
+		local arrowOutline = hidden.arrowOutline;
+		arrowOutline.PointA = arrow.PointA;
+		arrowOutline.PointB = arrow.PointB;
+		arrowOutline.PointC = arrow.PointC;
+		arrowOutline.Color = options.offScreenArrowOutlineColor[1];
+		arrowOutline.Transparency = options.offScreenArrowOutlineColor[2];
+	end
+	
+	local box3dEnabled = enabled and onScreen and options.box3d;
+	for i = 1, #box3d do
+		local face = box3d[i];
+		for i2 = 1, #face do
+			local line = face[i2];
+			line.Visible = box3dEnabled;
+			line.Color = options.box3dColor[1];
+			line.Transparency = options.box3dColor[2];
+		end
+		
+		if box3dEnabled then
+			local line1 = face[1];
+			line1.From = corners.corners[i];
+			line1.To = corners.corners[i == 4 and 1 or i+1];
+			
+			local line2 = face[2];
+			line2.From = corners.corners[i == 4 and 1 or i+1];
+			line2.To = corners.corners[i == 4 and 5 or i+5];
+			
+			local line3 = face[3];
+			line3.From = corners.corners[i == 4 and 5 or i+5];
+			line3.To = corners.corners[i == 4 and 8 or i+4];
+		end
+	end
+end
+
+-- instance class for simple text ESP
 local InstanceObject = {};
 InstanceObject.__index = InstanceObject;
 
@@ -458,6 +801,7 @@ function InstanceObject.new(instance, options)
 	local self = setmetatable({}, InstanceObject);
 	self.instance = assert(instance, "Missing argument #1 (Instance Expected)");
 	self.options = assert(options, "Missing argument #2 (table expected)");
+	self.maid = Maid.new();
 	self:Construct();
 	return self;
 end
@@ -476,15 +820,17 @@ function InstanceObject:Construct()
 
 	self.text = Drawing.new("Text");
 	self.text.Center = true;
+	self.maid:AddTask(self.text);
 
 	self.renderConnection = runService.Heartbeat:Connect(function(deltaTime)
 		self:Render(deltaTime);
 	end);
+	
+	self.maid:AddTask(self.renderConnection);
 end
 
 function InstanceObject:Destruct()
-	self.renderConnection:Disconnect();
-	self.text:Remove();
+	self.maid:Cleanup();
 end
 
 function InstanceObject:Render()
@@ -526,7 +872,9 @@ end
 local EspInterface = {
 	_hasLoaded = false,
 	_objectCache = {},
+	_instanceCache = {},
 	whitelist = {},
+	maid = Maid.new(),
 	sharedSettings = {
 		textSize = 13,
 		textFont = 2,
@@ -628,17 +976,98 @@ local EspInterface = {
 			chamsFillColor = { Color3.new(0.2, 0.2, 0.2), 0.5 },
 			chamsOutlineColor = { Color3.new(0,1,0), 0 }
 		}
+	},
+	-- Settings for instances (NPCs, etc.)
+	instanceSettings = {
+		enabled = false,
+		box = false,
+		boxColor = { Color3.new(1,1,0), 1 },
+		boxOutline = true,
+		boxOutlineColor = { Color3.new(), 1 },
+		boxFill = false,
+		boxFillColor = { Color3.new(1,1,0), 0.5 },
+		healthBar = false,
+		healthyColor = Color3.new(0,1,0),
+		dyingColor = Color3.new(1,0,0),
+		healthBarOutline = true,
+		healthBarOutlineColor = { Color3.new(), 0.5 },
+		healthText = false,
+		healthTextColor = { Color3.new(1,1,1), 1 },
+		healthTextOutline = true,
+		healthTextOutlineColor = Color3.new(),
+		box3d = false,
+		box3dColor = { Color3.new(1,1,0), 1 },
+		name = false,
+		nameColor = { Color3.new(1,1,1), 1 },
+		nameOutline = true,
+		nameOutlineColor = Color3.new(),
+		customText = false,
+		customTextValue = "",
+		customTextColor = { Color3.new(1,1,1), 1 },
+		customTextOutline = true,
+		customTextOutlineColor = Color3.new(),
+		distance = false,
+		distanceColor = { Color3.new(1,1,1), 1 },
+		distanceOutline = true,
+		distanceOutlineColor = Color3.new(),
+		tracer = false,
+		tracerOrigin = "Bottom",
+		tracerColor = { Color3.new(1,1,0), 1 },
+		tracerOutline = true,
+		tracerOutlineColor = { Color3.new(), 1 },
+		offScreenArrow = false,
+		offScreenArrowColor = { Color3.new(1,1,1), 1 },
+		offScreenArrowSize = 15,
+		offScreenArrowRadius = 150,
+		offScreenArrowOutline = true,
+		offScreenArrowOutlineColor = { Color3.new(), 1 },
+		chams = false,
+		chamsVisibleOnly = false,
+		chamsFillColor = { Color3.new(0.2, 0.2, 0.2), 0.5 },
+		chamsOutlineColor = { Color3.new(1,1,0), 0 },
 	}
 };
 
+-- Enhanced AddInstance function for NPCs with full ESP features
+function EspInterface.AddInstanceEsp(instance, customOptions)
+	local cache = EspInterface._instanceCache;
+	if cache[instance] then
+		warn("Instance ESP handler already exists.");
+	else
+		cache[instance] = InstanceEspObject.new(instance, EspInterface, customOptions);
+	end
+	return cache[instance];
+end
+
+-- Simple AddInstance for basic text ESP (backward compatibility)
 function EspInterface.AddInstance(instance, options)
-	local cache = EspInterface._objectCache;
+	local cache = EspInterface._instanceCache;
 	if cache[instance] then
 		warn("Instance handler already exists.");
 	else
-		cache[instance] = { InstanceObject.new(instance, options) };
+		cache[instance] = InstanceObject.new(instance, options);
 	end
-	return cache[instance][1];
+	return cache[instance];
+end
+
+-- Add multiple instances with same options
+function EspInterface.AddInstances(instances, customOptions)
+	local objects = {};
+	for i, instance in pairs(instances) do
+		objects[i] = EspInterface.AddInstanceEsp(instance, customOptions);
+	end
+	return objects;
+end
+
+-- Add all instances of a class
+function EspInterface.AddInstancesByClass(className, customOptions)
+	local instances = {};
+	for i, v in pairs(workspace:GetDescendants()) do
+		if v:IsA(className) then
+			instances[#instances + 1] = v;
+		end
+	end
+	return EspInterface.AddInstances(instances, customOptions);
 end
 
 function EspInterface.Load()
@@ -670,6 +1099,10 @@ function EspInterface.Load()
 
 	EspInterface.playerAdded = players.PlayerAdded:Connect(createObject);
 	EspInterface.playerRemoving = players.PlayerRemoving:Connect(removeObject);
+	
+	EspInterface.maid:AddTask(EspInterface.playerAdded);
+	EspInterface.maid:AddTask(EspInterface.playerRemoving);
+	
 	EspInterface._hasLoaded = true;
 end
 
@@ -681,15 +1114,50 @@ function EspInterface.Unload()
 			object[i]:Destruct();
 		end
 	end
+	
+	for _, object in next, EspInterface._instanceCache do
+		object:Destruct();
+	end
 
-	EspInterface.playerAdded:Disconnect();
-	EspInterface.playerRemoving:Disconnect();
+	EspInterface.maid:Cleanup();
 	EspInterface._hasLoaded = false;
 end
 
--- game specific functions
+-- Enhanced game specific functions with better weapon detection
 function EspInterface.getWeapon(player)
-	return "Unknown";
+	local character = player.Character;
+	if not character then return "None"; end
+	
+	-- Check for held tools
+	local tool = character:FindFirstChildOfClass("Tool");
+	if tool then
+		return tool.Name;
+	end
+	
+	-- Check backpack for equipped tool
+	local backpack = player:FindFirstChild("Backpack");
+	if backpack then
+		local tools = backpack:GetChildren();
+		for i = 1, #tools do
+			if tools[i]:IsA("Tool") then
+				return tools[i].Name;
+			end
+		end
+	end
+	
+	-- Game-specific weapon detection
+	-- You can customize this based on your game
+	local humanoid = character:FindFirstChildOfClass("Humanoid");
+	if humanoid then
+		-- Check for weapon-related values or attributes
+		for _, attribute in pairs(humanoid:GetAttributes()) do
+			if string.find(string.lower(attribute), "weapon") then
+				return tostring(humanoid:GetAttribute(attribute));
+			end
+		end
+	end
+	
+	return "Unarmed";
 end
 
 function EspInterface.isFriendly(player)
@@ -706,6 +1174,54 @@ function EspInterface.getHealth(character)
 		return humanoid.Health, humanoid.MaxHealth;
 	end
 	return 100, 100;
+end
+
+-- Utility functions for easier configuration
+function EspInterface.EnableEnemyEsp()
+	EspInterface.teamSettings.enemy.enabled = true;
+	EspInterface.teamSettings.enemy.box = true;
+	EspInterface.teamSettings.enemy.name = true;
+	EspInterface.teamSettings.enemy.distance = true;
+	EspInterface.teamSettings.enemy.healthBar = true;
+	EspInterface.teamSettings.enemy.weapon = true;
+end
+
+function EspInterface.EnableFriendlyEsp()
+	EspInterface.teamSettings.friendly.enabled = true;
+	EspInterface.teamSettings.friendly.box = true;
+	EspInterface.teamSettings.friendly.name = true;
+	EspInterface.teamSettings.friendly.distance = true;
+	EspInterface.teamSettings.friendly.healthBar = true;
+	EspInterface.teamSettings.friendly.weapon = true;
+end
+
+function EspInterface.EnableInstanceEsp()
+	EspInterface.instanceSettings.enabled = true;
+	EspInterface.instanceSettings.box = true;
+	EspInterface.instanceSettings.name = true;
+	EspInterface.instanceSettings.distance = true;
+end
+
+-- Example usage for NPCs
+function EspInterface.SetupNpcEsp(options)
+	options = options or {};
+	local npcOptions = {
+		enabled = true,
+		box = true,
+		boxColor = { Color3.new(1, 0.5, 0), 1 },
+		name = true,
+		nameColor = { Color3.new(1, 1, 1), 1 },
+		distance = true,
+		healthBar = options.healthBar or false,
+		customText = options.customText or false,
+		customTextValue = options.customTextValue or "",
+	};
+	
+	for key, value in pairs(options) do
+		npcOptions[key] = value;
+	end
+	
+	return npcOptions;
 end
 
 return EspInterface;
