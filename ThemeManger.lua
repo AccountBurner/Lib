@@ -4,23 +4,45 @@ local httprequest = (syn and syn.request) or (http and http.request) or http_req
 local getassetfunc = getcustomasset or getsynasset
 local ThemeManager = {} do
 	ThemeManager.Folder = 'Orange'
-	-- if not isfolder(ThemeManager.Folder) then makefolder(ThemeManager.Folder) end
 
 	ThemeManager.Library = nil
 	ThemeManager.BuiltInThemes = {
 		['Orange'] 		= { 1, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1e1e1e","AccentColor":"ff4c00","BackgroundColor":"232323","OutlineColor":"141414"}') },
-		['Defaultt'] 		= { 2, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1c1c1c","AccentColor":"0055ff","BackgroundColor":"141414","OutlineColor":"323232"}') },
-		['BBot'] 			= { 3, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1e1e1e","AccentColor":"7e48a3","BackgroundColor":"232323","OutlineColor":"141414"}') },
-		['Fatality']		= { 4, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1e1842","AccentColor":"c50754","BackgroundColor":"191335","OutlineColor":"3c355d"}') },
-		['Jester'] 			= { 5, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"242424","AccentColor":"db4467","BackgroundColor":"1c1c1c","OutlineColor":"373737"}') },
-		['Mint'] 			= { 6, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"242424","AccentColor":"3db488","BackgroundColor":"1c1c1c","OutlineColor":"373737"}') },
-		['Tokyo Night'] 	= { 7, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"191925","AccentColor":"6759b3","BackgroundColor":"16161f","OutlineColor":"323232"}') },
-		['Ubuntu'] 			= { 8, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"3e3e3e","AccentColor":"e2581e","BackgroundColor":"323232","OutlineColor":"191919"}') },
-		['Quartz'] 			= { 9, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"232330","AccentColor":"426e87","BackgroundColor":"1d1b26","OutlineColor":"27232f"}') },
+		['Default'] 	= { 2, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1c1c1c","AccentColor":"0055ff","BackgroundColor":"141414","OutlineColor":"323232"}') },
+		['BBot'] 		= { 3, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1e1e1e","AccentColor":"7e48a3","BackgroundColor":"232323","OutlineColor":"141414"}') },
+		['Fatality']	= { 4, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1e1842","AccentColor":"c50754","BackgroundColor":"191335","OutlineColor":"3c355d"}') },
+		['Jester'] 		= { 5, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"242424","AccentColor":"db4467","BackgroundColor":"1c1c1c","OutlineColor":"373737"}') },
+		['Mint'] 		= { 6, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"242424","AccentColor":"3db488","BackgroundColor":"1c1c1c","OutlineColor":"373737"}') },
+		['Tokyo Night'] = { 7, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"191925","AccentColor":"6759b3","BackgroundColor":"16161f","OutlineColor":"323232"}') },
+		['Ubuntu'] 		= { 8, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"3e3e3e","AccentColor":"e2581e","BackgroundColor":"323232","OutlineColor":"191919"}') },
+		['Quartz'] 		= { 9, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"232330","AccentColor":"426e87","BackgroundColor":"1d1b26","OutlineColor":"27232f"}') },
+		['Dark Red']	= { 10, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1a0f0f","AccentColor":"ff3333","BackgroundColor":"0f0606","OutlineColor":"2a1a1a"}') },
+		['Purple Haze']	= { 11, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1a1226","AccentColor":"8a2be2","BackgroundColor":"100b1a","OutlineColor":"2e2240"}') },
+		['Ocean Blue']	= { 12, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"0f1419","AccentColor":"00bfff","BackgroundColor":"050a0f","OutlineColor":"1f2933"}') },
+		['Forest Green']= { 13, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"0d1b0d","AccentColor":"32cd32","BackgroundColor":"061006","OutlineColor":"1a2b1a"}') },
+		['Sunset']		= { 14, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1f1710","AccentColor":"ff6347","BackgroundColor":"120e08","OutlineColor":"2f2520"}') },
+		['Cotton Candy']= { 15, httpService:JSONDecode('{"FontColor":"000000","MainColor":"f5f5f5","AccentColor":"ff69b4","BackgroundColor":"ffffff","OutlineColor":"e6e6e6"}') },
+		['Cyberpunk']	= { 16, httpService:JSONDecode('{"FontColor":"00ffff","MainColor":"0a0a0a","AccentColor":"ff0080","BackgroundColor":"000000","OutlineColor":"330033"}') },
+		['Gold Rush']	= { 17, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1a1a1a","AccentColor":"ffd700","BackgroundColor":"0d0d0d","OutlineColor":"2a2a2a"}') },
+		['Matrix']		= { 18, httpService:JSONDecode('{"FontColor":"00ff00","MainColor":"000000","AccentColor":"00ff41","BackgroundColor":"000000","OutlineColor":"003300"}') },
+		['Blood Moon']	= { 19, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1a0f0f","AccentColor":"dc143c","BackgroundColor":"0a0505","OutlineColor":"3d1a1a"}') },
+		['Neon Cyan']	= { 20, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"0f1a1a","AccentColor":"00ffff","BackgroundColor":"050f0f","OutlineColor":"1a3d3d"}') },
+		['Royal Purple']= { 21, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1a0f1a","AccentColor":"9370db","BackgroundColor":"0f050f","OutlineColor":"3d1a3d"}') },
+		['Lime Green']	= { 22, httpService:JSONDecode('{"FontColor":"000000","MainColor":"1a1a0f","AccentColor":"32ff32","BackgroundColor":"0f0f05","OutlineColor":"3d3d1a"}') },
+		['Hot Pink']	= { 23, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1a0f1a","AccentColor":"ff1493","BackgroundColor":"0f050f","OutlineColor":"3d1a3d"}') },
+		['Ice Blue']	= { 24, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"0f1a1f","AccentColor":"87ceeb","BackgroundColor":"050f12","OutlineColor":"1a3d4d"}') },
+		['Lava']		= { 25, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1f0f0a","AccentColor":"ff4500","BackgroundColor":"120805","OutlineColor":"4d1a0a"}') },
+		['Midnight']	= { 26, httpService:JSONDecode('{"FontColor":"c0c0c0","MainColor":"050505","AccentColor":"4169e1","BackgroundColor":"000000","OutlineColor":"1a1a1a"}') },
+		['Toxic']		= { 27, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1a1f0f","AccentColor":"adff2f","BackgroundColor":"0f1205","OutlineColor":"3d4d1a"}') },
+		['Magenta']		= { 28, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1f0f1f","AccentColor":"ff00ff","BackgroundColor":"120512","OutlineColor":"4d1a4d"}') },
+		['Turquoise']	= { 29, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"0f1f1a","AccentColor":"40e0d0","BackgroundColor":"051208","OutlineColor":"1a4d3d"}') },
+		['Solar']		= { 30, httpService:JSONDecode('{"FontColor":"000000","MainColor":"1f1f0f","AccentColor":"ffff00","BackgroundColor":"12120a","OutlineColor":"4d4d1a"}') },
 	}
 
 	function ApplyBackgroundVideo(webmLink)
-		if writefile == nil then return end;if readfile == nil then return end;if isfile == nil then return end
+		if writefile == nil then return end
+		if readfile == nil then return end
+		if isfile == nil then return end
 		if ThemeManager.Library == nil then return end
 		if ThemeManager.Library.InnerVideoBackground == nil then return end
 
@@ -29,7 +51,7 @@ local ThemeManager = {} do
 			if isfile(ThemeManager.Folder .. '/themes/currentVideoLink.txt') then
 				CurrentSaved = readfile(ThemeManager.Folder .. '/themes/currentVideoLink.txt')
 			end
-			local VideoData = nil;
+			local VideoData = nil
 			if CurrentSaved == tostring(webmLink) then
 				VideoData = {
 					Success = true,
@@ -56,6 +78,54 @@ local ThemeManager = {} do
 			end
 		end
 	end
+
+	function ApplyBackgroundAudio(mp3Link)
+		if writefile == nil then return end
+		if readfile == nil then return end
+		if isfile == nil then return end
+		if ThemeManager.Library == nil then return end
+		if ThemeManager.Library.BackgroundSound == nil then
+			ThemeManager.Library.BackgroundSound = Instance.new("Sound")
+			ThemeManager.Library.BackgroundSound.Parent = ThemeManager.Library.ScreenGui
+			ThemeManager.Library.BackgroundSound.Looped = true
+			ThemeManager.Library.BackgroundSound.Volume = 0.5
+		end
+
+		if string.sub(tostring(mp3Link), -4) == ".mp3" or string.sub(tostring(mp3Link), -4) == ".wav" or string.sub(tostring(mp3Link), -4) == ".ogg" then
+			local CurrentSaved = ""
+			if isfile(ThemeManager.Folder .. '/themes/currentAudioLink.txt') then
+				CurrentSaved = readfile(ThemeManager.Folder .. '/themes/currentAudioLink.txt')
+			end
+			local AudioData = nil
+			if CurrentSaved == tostring(mp3Link) then
+				AudioData = {
+					Success = true,
+					Body = nil
+				}
+			else
+				AudioData = httprequest({
+					Url = tostring(mp3Link),
+					Method = 'GET'
+				})
+			end
+			
+			if (AudioData.Success) then
+				AudioData = AudioData.Body
+				if (isfile(ThemeManager.Folder .. '/themes/currentAudio.mp3') == false and AudioData ~= nil) or AudioData ~= nil then
+					local extension = string.match(tostring(mp3Link), "%.([^%.]+)$") or "mp3"
+					writefile(ThemeManager.Folder .. '/themes/currentAudio.' .. extension, AudioData)
+					writefile(ThemeManager.Folder .. '/themes/currentAudioLink.txt', tostring(mp3Link))
+				end
+				
+				local extension = string.match(tostring(mp3Link), "%.([^%.]+)$") or "mp3"
+				local Audio = getassetfunc(ThemeManager.Folder .. '/themes/currentAudio.' .. extension)
+				
+				ThemeManager.Library.BackgroundSound:Stop()
+				ThemeManager.Library.BackgroundSound.SoundId = Audio
+				ThemeManager.Library.BackgroundSound:Play()
+			end
+		end
+	end
 	
 	function ThemeManager:ApplyTheme(theme)
 		local customThemeData = self:GetCustomTheme(theme)
@@ -63,20 +133,23 @@ local ThemeManager = {} do
 
 		if not data then return end
 
-		-- custom themes are just regular dictionaries instead of an array with { index, dictionary }
 		if self.Library.InnerVideoBackground ~= nil then
 			self.Library.InnerVideoBackground.Visible = false
 		end
 		
+		if self.Library.BackgroundSound ~= nil then
+			self.Library.BackgroundSound:Stop()
+		end
+		
 		local scheme = data[2]
 		for idx, col in next, customThemeData or scheme do
-			if idx ~= "VideoLink" then
+			if idx ~= "VideoLink" and idx ~= "AudioLink" then
 				self.Library[idx] = Color3.fromHex(col)
 				
 				if getgenv().Linoria.Options[idx] then
 					getgenv().Linoria.Options[idx]:SetValueRGB(Color3.fromHex(col))
 				end
-			else
+			elseif idx == "VideoLink" then
 				self.Library[idx] = col
 				
 				if getgenv().Linoria.Options[idx] then
@@ -84,6 +157,14 @@ local ThemeManager = {} do
 				end
 				
 				ApplyBackgroundVideo(col)
+			elseif idx == "AudioLink" then
+				self.Library[idx] = col
+				
+				if getgenv().Linoria.Options[idx] then
+					getgenv().Linoria.Options[idx]:SetValue(col)
+				end
+				
+				ApplyBackgroundAudio(col)
 			end
 		end
 
@@ -91,22 +172,27 @@ local ThemeManager = {} do
 	end
 
 	function ThemeManager:ThemeUpdate()
-		-- This allows us to force apply themes without loading the themes tab :)
 		if self.Library.InnerVideoBackground ~= nil then
 			self.Library.InnerVideoBackground.Visible = false
 		end
 		
-		local options = { "FontColor", "MainColor", "AccentColor", "BackgroundColor", "OutlineColor", "VideoLink" }
+		if self.Library.BackgroundSound ~= nil then
+			self.Library.BackgroundSound:Stop()
+		end
+		
+		local options = { "FontColor", "MainColor", "AccentColor", "BackgroundColor", "OutlineColor", "VideoLink", "AudioLink" }
 		for i, field in next, options do
 			if getgenv().Linoria.Options and getgenv().Linoria.Options[field] then
 				self.Library[field] = getgenv().Linoria.Options[field].Value
 				if field == "VideoLink" then
 					ApplyBackgroundVideo(getgenv().Linoria.Options[field].Value)
+				elseif field == "AudioLink" then
+					ApplyBackgroundAudio(getgenv().Linoria.Options[field].Value)
 				end
 			end
 		end
 
-		self.Library.AccentColorDark = self.Library:GetDarkerColor(self.Library.AccentColor);
+		self.Library.AccentColorDark = self.Library:GetDarkerColor(self.Library.AccentColor)
 		self.Library:UpdateColorsUsingRegistry()
 	end
 
@@ -120,7 +206,7 @@ local ThemeManager = {} do
 				theme = content
 			elseif self:GetCustomTheme(content) then
 				theme = content
-				isDefault = false;
+				isDefault = false
 			end
 		elseif self.BuiltInThemes[self.DefaultTheme] then
 		theme = self.DefaultTheme
@@ -152,11 +238,15 @@ local ThemeManager = {} do
 	end
 	
 	function ThemeManager:CreateThemeManager(groupbox)
-		groupbox:AddLabel('Background color'):AddColorPicker('BackgroundColor', { Default = self.Library.BackgroundColor });
-		groupbox:AddLabel('Main color')	:AddColorPicker('MainColor', { Default = self.Library.MainColor });
-		groupbox:AddLabel('Accent color'):AddColorPicker('AccentColor', { Default = self.Library.AccentColor });
-		groupbox:AddLabel('Outline color'):AddColorPicker('OutlineColor', { Default = self.Library.OutlineColor });
-		groupbox:AddLabel('Font color')	:AddColorPicker('FontColor', { Default = self.Library.FontColor });
+		groupbox:AddLabel('Background color'):AddColorPicker('BackgroundColor', { Default = self.Library.BackgroundColor })
+		groupbox:AddLabel('Main color')	:AddColorPicker('MainColor', { Default = self.Library.MainColor })
+		groupbox:AddLabel('Accent color'):AddColorPicker('AccentColor', { Default = self.Library.AccentColor })
+		groupbox:AddLabel('Outline color'):AddColorPicker('OutlineColor', { Default = self.Library.OutlineColor })
+		groupbox:AddLabel('Font color')	:AddColorPicker('FontColor', { Default = self.Library.FontColor })
+		
+		groupbox:AddInput('VideoLink', {Text='Background Video Link';Default=self.Library.VideoLink or'';Placeholder='Enter .webm video URL...'});
+		groupbox:AddInput('AudioLink', {Text='Background Audio Link';Default=self.Library.AudioLink or'';Placeholder='Enter .mp3/.wav/.ogg audio URL...'});
+
 		
 		local ThemesArray = {}
 		for Name, Theme in next, self.BuiltInThemes do
@@ -240,6 +330,8 @@ local ThemeManager = {} do
 		getgenv().Linoria.Options.AccentColor:OnChanged(UpdateTheme)
 		getgenv().Linoria.Options.OutlineColor:OnChanged(UpdateTheme)
 		getgenv().Linoria.Options.FontColor:OnChanged(UpdateTheme)
+		getgenv().Linoria.Options.VideoLink:OnChanged(UpdateTheme)
+		getgenv().Linoria.Options.AudioLink:OnChanged(UpdateTheme)
 	end
 
 	function ThemeManager:GetCustomTheme(file)
@@ -264,10 +356,10 @@ local ThemeManager = {} do
 		end
 
 		local theme = {}
-		local fields = { "FontColor", "MainColor", "AccentColor", "BackgroundColor", "OutlineColor", "VideoLink" }
+		local fields = { "FontColor", "MainColor", "AccentColor", "BackgroundColor", "OutlineColor", "VideoLink", "AudioLink" }
 
 		for _, field in next, fields do
-			if field == "VideoLink" then
+			if field == "VideoLink" or field == "AudioLink" then
 				theme[field] = getgenv().Linoria.Options[field].Value
 			else
 				theme[field] = getgenv().Linoria.Options[field].Value:ToHex()
@@ -284,8 +376,6 @@ local ThemeManager = {} do
 		for i = 1, #list do
 			local file = list[i]
 			if file:sub(-5) == '.json' then
-				-- i hate this but it has to be done ...
-
 				local pos = file:find('.json', 1, true)
 				local char = file:sub(pos, pos)
 
@@ -309,9 +399,6 @@ local ThemeManager = {} do
 
 	function ThemeManager:BuildFolderTree()
 		local paths = {}
-
-		-- build the entire tree if a path is like some-hub/phantom-forces
-		-- makefolder builds the entire tree on Synapse X but not other exploits
 
 		local parts = self.Folder:split('/')
 		for idx = 1, #parts do
@@ -351,5 +438,4 @@ local ThemeManager = {} do
 
 	ThemeManager:BuildFolderTree()
 end
-
 return ThemeManager
