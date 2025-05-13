@@ -614,6 +614,18 @@ function Library:OnHighlight(HighlightInstance, Instance, Properties, Properties
 		undoHighlight()
 	end)
 end;
+function Library:StyleScrollbar(ScrollFrame)
+    ScrollFrame.ScrollBarThickness = 4;
+    ScrollFrame.ScrollBarImageColor3 = Library.AccentColor;
+    ScrollFrame.ScrollBarImageTransparency = 0.3;
+    ScrollFrame.TopImage = '';
+    ScrollFrame.MidImage = '';
+    ScrollFrame.BottomImage = '';
+    
+    Library:AddToRegistry(ScrollFrame, {
+        ScrollBarImageColor3 = 'AccentColor';
+    });
+end;
 
 function Library:MouseIsOverOpenedFrame(Input)
 	local Pos = Mouse;
@@ -2894,6 +2906,7 @@ do
 			ScrollBarThickness = 3,
 			ScrollBarImageColor3 = Library.AccentColor,
 		});
+		Library:StyleScrollbar(Scrolling);
 
 		Library:AddToRegistry(Scrolling, {
 			ScrollBarImageColor3 = 'AccentColor'
@@ -3802,6 +3815,7 @@ function Library:CreateWindow(...)
 			ZIndex = 2;
 			Parent = TabFrame;
 		});
+		Library:StyleScrollbar(LeftSide);
 
 		local RightSide = Library:Create('ScrollingFrame', {
 			BackgroundTransparency = 1;
@@ -3815,6 +3829,7 @@ function Library:CreateWindow(...)
 			ZIndex = 2;
 			Parent = TabFrame;
 		});
+		Library:StyleScrollbar(RightSide);
 
 		Library:Create('UIListLayout', {
 			Padding = UDim.new(0, 8);
