@@ -1,4 +1,3 @@
-
 -- Load utilities
 local Maid = loadstring(game:HttpGet("https://raw.githubusercontent.com/AccountBurner/Utility/refs/heads/main/Maid.lua"))()
 local Signal = loadstring(game:HttpGet("https://raw.githubusercontent.com/AccountBurner/Utility/refs/heads/main/Signal"))()
@@ -64,13 +63,22 @@ local function isBodyPart(name)
 end
 
 local function getBoundingBox(parts)
+	if not parts or #parts == 0 then
+		return CFrame.new(), Vector3.new(4, 4, 4);
+	end
+
 	local min, max;
 	for i = 1, #parts do
 		local part = parts[i];
-		local cframe, size = part.CFrame, part.Size;
+		if part and part.Parent then
+			local cframe, size = part.CFrame, part.Size;
+			min = min3(min or cframe.Position, (cframe - size*0.5).Position);
+			max = max3(max or cframe.Position, (cframe + size*0.5).Position);
+		end
+	end
 
-		min = min3(min or cframe.Position, (cframe - size*0.5).Position);
-		max = max3(max or cframe.Position, (cframe + size*0.5).Position);
+	if not min or not max then
+		return CFrame.new(), Vector3.new(4, 4, 4);
 	end
 
 	local center = (min + max)*0.5;
@@ -457,7 +465,7 @@ function ChamObject:Update()
 	end
 end
 
--- Enhanced Instance ESP Object for NPCs and custom instances
+
 local InstanceEspObject = {};
 InstanceEspObject.__index = InstanceEspObject;
 
@@ -528,8 +536,15 @@ function InstanceEspObject:create(class, properties)
 end
 
 function InstanceEspObject:Destruct()
-	self.maid:Cleanup();
-	clear(self);
+    if self.interface and self.interface._instanceCache then
+        local cache = self.interface._instanceCache;
+        if cache[self.instance] then
+            cache[self.instance] = nil;
+        end
+    end
+    
+    self.maid:Cleanup();
+    clear(self);
 end
 
 function InstanceEspObject:Update()
@@ -602,6 +617,7 @@ function InstanceEspObject:Render()
 	if not self.drawings or not self.drawings.visible then
 		return;
 	end
+	
 	local onScreen = self.onScreen or false;
 	local enabled = self.enabled or false;
 	local visible = self.drawings.visible;
@@ -610,6 +626,22 @@ function InstanceEspObject:Render()
 	local interface = self.interface;
 	local options = self.options;
 	local corners = self.corners;
+	
+	-- Early exit if not valid
+	if not corners then
+		for _, drawing in pairs(visible) do
+			drawing.Visible = false;
+		end
+		for _, drawing in pairs(hidden) do
+			drawing.Visible = false;
+		end
+		for _, face in pairs(box3d) do
+			for _, line in pairs(face) do
+				line.Visible = false;
+			end
+		end
+		return;
+	end
 	
 	visible.box.Visible = enabled and onScreen and options.box;
 	visible.boxOutline.Visible = visible.box.Visible and options.boxOutline;
@@ -639,12 +671,6 @@ function InstanceEspObject:Render()
 	visible.healthBar.Visible = enabled and onScreen and options.healthBar and self.health ~= nil;
 	visible.healthBarOutline.Visible = visible.healthBar.Visible and options.healthBarOutline;
 	if visible.healthBar.Visible then
-		if not corners then
-			visible.healthBar.Visible = false;
-			visible.healthBarOutline.Visible = false;
-			return;
-		end
-		
 		local barFrom = corners.topLeft - HEALTH_BAR_OFFSET;
 		local barTo = corners.bottomLeft - HEALTH_BAR_OFFSET;
 		
@@ -655,18 +681,15 @@ function InstanceEspObject:Render()
 		
 		local healthBar = visible.healthBar;
 		healthBar.To = Vector2.new(barTo.X, barTo.Y);
-		healthBar.From = Vector2.new(
-			lerp2(barTo, barFrom, healthRatio).X,
-			lerp2(barTo, barFrom, healthRatio).Y
-		);
+		healthBar.From = lerp2(barTo, barFrom, healthRatio);
 		healthBar.Color = lerpColor(options.dyingColor, options.healthyColor, healthRatio);
 		
 		if visible.healthBarOutline.Visible then
 			local healthBarOutline = visible.healthBarOutline;
 			local outlineFrom = barFrom - HEALTH_BAR_OUTLINE_OFFSET;
 			local outlineTo = barTo + HEALTH_BAR_OUTLINE_OFFSET;
-			healthBarOutline.To = Vector2.new(outlineTo.X, outlineTo.Y);
-			healthBarOutline.From = Vector2.new(outlineFrom.X, outlineFrom.Y);
+			healthBarOutline.To = outlineTo;
+			healthBarOutline.From = outlineFrom;
 			healthBarOutline.Color = options.healthBarOutlineColor[1];
 			healthBarOutline.Transparency = options.healthBarOutlineColor[2];
 		end
@@ -771,8 +794,10 @@ function InstanceEspObject:Render()
 		for i2 = 1, #face do
 			local line = face[i2];
 			line.Visible = box3dEnabled;
-			line.Color = options.box3dColor[1];
-			line.Transparency = options.box3dColor[2];
+			if box3dEnabled then
+				line.Color = options.box3dColor[1];
+				line.Transparency = options.box3dColor[2];
+			end
 		end
 		
 		if box3dEnabled then
@@ -791,7 +816,7 @@ function InstanceEspObject:Render()
 	end
 end
 
--- instance class for simple text ESP
+-- Fixed instance class for simple text ESP with better cleanup
 local InstanceObject = {};
 InstanceObject.__index = InstanceObject;
 
@@ -800,6 +825,15 @@ function InstanceObject.new(instance, options)
 	self.instance = assert(instance, "Missing argument #1 (Instance Expected)");
 	self.options = assert(options, "Missing argument #2 (table expected)");
 	self.maid = Maid.new();
+	
+	-- Add connection removed event to clean up automatically
+	self.removedConnection = instance.AncestryChanged:Connect(function()
+		if not instance.Parent then
+			self:Destruct();
+		end
+	end);
+	self.maid:AddTask(self.removedConnection);
+	
 	self:Construct();
 	return self;
 end
@@ -828,7 +862,18 @@ function InstanceObject:Construct()
 end
 
 function InstanceObject:Destruct()
+	if self.text then
+		self.text.Visible = false;
+	end
+	
 	self.maid:Cleanup();
+	
+	local cache = EspInterface._instanceCache;
+	if cache and cache[self.instance] then
+		cache[self.instance] = nil;
+	end
+	
+	clear(self);
 end
 
 function InstanceObject:Render()
@@ -1026,33 +1071,78 @@ local EspInterface = {
 	}
 };
 
--- Enhanced AddInstance function for NPCs with full ESP features
 function EspInterface.AddInstanceEsp(instance, customOptions)
+	if not instance or not instance.Parent then
+		warn("Cannot add ESP to invalid instance");
+		return nil;
+	end
+	
 	local cache = EspInterface._instanceCache;
 	if cache[instance] then
-		--warn("Instance ESP handler already exists.");
-	else
-		cache[instance] = InstanceEspObject.new(instance, EspInterface, customOptions);
+		--warn("Instance ESP handler already exists for " .. instance.Name);
+		return cache[instance];
 	end
+	
+	cache[instance] = InstanceEspObject.new(instance, EspInterface, customOptions);
 	return cache[instance];
 end
 
--- Simple AddInstance for basic text ESP (backward compatibility)
+
 function EspInterface.AddInstance(instance, options)
+	if not instance or not instance.Parent then
+		warn("Cannot add ESP to invalid instance");
+		return nil;
+	end
+	
 	local cache = EspInterface._instanceCache;
 	if cache[instance] then
-		--warn("Instance handler already exists.");
-	else
-		cache[instance] = InstanceObject.new(instance, options);
+		--warn("Instance handler already exists for " .. instance.Name);
+		return cache[instance];
 	end
+	
+	cache[instance] = InstanceObject.new(instance, options);
 	return cache[instance];
+end
+
+-- Remove instance ESP
+function EspInterface.RemoveInstance(instance)
+	local cache = EspInterface._instanceCache;
+	local object = cache[instance];
+	if object then
+		object:Destruct();
+		cache[instance] = nil;
+		return true;
+	end
+	return false;
+end
+
+-- Clean up invalid instances
+function EspInterface.CleanupInstances()
+	local cache = EspInterface._instanceCache;
+	local toRemove = {};
+	
+	for instance, object in pairs(cache) do
+		if not instance or not instance.Parent then
+			toRemove[#toRemove + 1] = instance;
+		end
+	end
+	
+	for i = 1, #toRemove do
+		local instance = toRemove[i];
+		EspInterface.RemoveInstance(instance);
+	end
+	
+	return #toRemove;
 end
 
 -- Add multiple instances with same options
 function EspInterface.AddInstances(instances, customOptions)
 	local objects = {};
 	for i, instance in pairs(instances) do
-		objects[i] = EspInterface.AddInstanceEsp(instance, customOptions);
+		local obj = EspInterface.AddInstanceEsp(instance, customOptions);
+		if obj then
+			objects[i] = obj;
+		end
 	end
 	return objects;
 end
@@ -1084,7 +1174,6 @@ function EspInterface.Load()
 			for i = 1, #object do
 				object[i]:Destruct();
 			end
-
 			EspInterface._objectCache[player] = nil;
 		end
 	end
@@ -1101,27 +1190,43 @@ function EspInterface.Load()
 	EspInterface.maid:AddTask(EspInterface.playerAdded);
 	EspInterface.maid:AddTask(EspInterface.playerRemoving);
 	
+	-- Add periodic cleanup for instances
+	EspInterface.cleanupConnection = runService.Heartbeat:Connect(function()
+		-- Run cleanup every 10 seconds
+		if tick() % 10 < 0.1 then
+			EspInterface.CleanupInstances();
+		end
+	end);
+	EspInterface.maid:AddTask(EspInterface.cleanupConnection);
+	
 	EspInterface._hasLoaded = true;
 end
 
 function EspInterface.Unload()
 	assert(EspInterface._hasLoaded, "Esp has not been loaded yet.");
 
-	for _, object in next, EspInterface._objectCache do
-		for i = 1, #object do
-			object[i]:Destruct();
+	-- Clean up all player objects
+	for player, object in next, EspInterface._objectCache do
+		if object then
+			for i = 1, #object do
+				object[i]:Destruct();
+			end
 		end
 	end
+	clear(EspInterface._objectCache);
 	
-	for _, object in next, EspInterface._instanceCache do
-		object:Destruct();
+	-- Clean up all instance objects
+	for instance, object in next, EspInterface._instanceCache do
+		if object then
+			object:Destruct();
+		end
 	end
+	clear(EspInterface._instanceCache);
 
 	EspInterface.maid:Cleanup();
 	EspInterface._hasLoaded = false;
 end
 
--- Enhanced game specific functions with better weapon detection
 function EspInterface.getWeapon(player)
 	local character = player.Character;
 	if not character then return "None"; end
@@ -1130,29 +1235,6 @@ function EspInterface.getWeapon(player)
 	local tool = character:FindFirstChildOfClass("Tool");
 	if tool then
 		return tool.Name;
-	end
-	
-	-- Check backpack for equipped tool
-	local backpack = player:FindFirstChild("Backpack");
-	if backpack then
-		local tools = backpack:GetChildren();
-		for i = 1, #tools do
-			if tools[i]:IsA("Tool") then
-				return tools[i].Name;
-			end
-		end
-	end
-	
-	-- Game-specific weapon detection
-	-- You can customize this based on your game
-	local humanoid = character:FindFirstChildOfClass("Humanoid");
-	if humanoid then
-		-- Check for weapon-related values or attributes
-		for _, attribute in pairs(humanoid:GetAttributes()) do
-			if string.find(string.lower(attribute), "weapon") then
-				return tostring(humanoid:GetAttribute(attribute));
-			end
-		end
 	end
 	
 	return "Unarmed";
@@ -1200,7 +1282,7 @@ function EspInterface.EnableInstanceEsp()
 	EspInterface.instanceSettings.distance = true;
 end
 
--- Example usage for NPCs
+--[[-- Example usage for NPCs
 function EspInterface.SetupNpcEsp(options)
 	options = options or {};
 	local npcOptions = {
@@ -1220,6 +1302,6 @@ function EspInterface.SetupNpcEsp(options)
 	end
 	
 	return npcOptions;
-end
+end]]
 
 return EspInterface;
