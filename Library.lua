@@ -883,71 +883,134 @@ do
 		   TextColor3 = 'FontColor';
 		});
 		
-		local SatVibMap = Library:Create('Frame', {
-		   BorderSizePixel = 0;
-		   Size = UDim2.new(1, 0, 1, 0);
-		   ZIndex = 18;
-		   BackgroundColor3 = Color3.fromRGB(255, 0, 0);
-		   Parent = SatVibMapContainer;
-		});
-		
-		local SaturationGradient = Library:Create('UIGradient', {
-		   Color = ColorSequence.new{
-		       ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
-		       ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 0, 0))
-		   };
-		   Rotation = 0;
-		   Parent = SatVibMap;
-		});
-		
-		local ValueOverlay = Library:Create('Frame', {
-		   BorderSizePixel = 0;
-		   Size = UDim2.new(1, 0, 1, 0);
-		   ZIndex = 19;
-		   BackgroundColor3 = Color3.fromRGB(0, 0, 0);
-		   Parent = SatVibMap;
-		});
-		
-		local ValueGradient = Library:Create('UIGradient', {
-		   Color = ColorSequence.new{
-		       ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
-		       ColorSequenceKeypoint.new(1.0, Color3.fromRGB(0, 0, 0))
-		   };
-		   Rotation = 90;
-		   Transparency = NumberSequence.new{
-		       NumberSequenceKeypoint.new(0.0, 1),
-		       NumberSequenceKeypoint.new(1.0, 0)
-		   };
-		   Parent = ValueOverlay;
-		});
-		
-		local isRainbowMode = false;
-		local rainbowConnection;
-		local currentHue = 0;
-		
-		RainbowToggle.MouseButton1Click:Connect(function()
-		   isRainbowMode = not isRainbowMode;
-		   RainbowToggle.Text = isRainbowMode and "ON" or "R";
-		   
-		   if isRainbowMode then
-		       rainbowConnection = RenderStepped:Connect(function()
-		           currentHue = currentHue + 0.005;
-		           if currentHue > 1 then currentHue = 0 end;
-		           
-		           local newColor = Color3.fromHSV(currentHue, 1, 1);
-		           SatVibMap.BackgroundColor3 = newColor;
-		           SaturationGradient.Color = ColorSequence.new{
-		               ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
-		               ColorSequenceKeypoint.new(1.0, newColor)
-		           };
-		       end);
-		   else
-		       if rainbowConnection then
-		           rainbowConnection:Disconnect();
-		       end;
-		   end;
-		end);
+		local SatVibMapContainer = Library:Create('Frame', {
+    BorderSizePixel = 0;
+    Size = UDim2.new(1, 0, 1, 0);
+    ZIndex = 18;
+    BackgroundColor3 = Color3.fromRGB(255, 255, 255);
+    Parent = SatVibMapInner;
+});
 
+local RainbowToggle = Library:Create('TextButton', {
+    Size = UDim2.new(0, 20, 0, 20);
+    Position = UDim2.new(1, -25, 0, 5);
+    BackgroundColor3 = Library.MainColor;
+    BorderColor3 = Library.OutlineColor;
+    Text = "R";
+    TextSize = 12;
+    TextColor3 = Library.FontColor;
+    ZIndex = 25;
+    Parent = SatVibMapContainer;
+});
+
+Library:AddToRegistry(RainbowToggle, {
+    BackgroundColor3 = 'MainColor';
+    BorderColor3 = 'OutlineColor';
+    TextColor3 = 'FontColor';
+});
+
+local SatVibMap = Library:Create('Frame', {
+    BorderSizePixel = 0;
+    Size = UDim2.new(1, 0, 1, 0);
+    ZIndex = 18;
+    BackgroundColor3 = Color3.fromRGB(255, 0, 0);
+    Parent = SatVibMapContainer;
+});
+
+local SaturationGradient = Library:Create('UIGradient', {
+    Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 0, 0))
+    };
+    Rotation = 0;
+    Parent = SatVibMap;
+});
+
+local ValueOverlay = Library:Create('Frame', {
+    BorderSizePixel = 0;
+    Size = UDim2.new(1, 0, 1, 0);
+    ZIndex = 19;
+    BackgroundColor3 = Color3.fromRGB(0, 0, 0);
+    Parent = SatVibMap;
+});
+
+local ValueGradient = Library:Create('UIGradient', {
+    Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1.0, Color3.fromRGB(0, 0, 0))
+    };
+    Rotation = 90;
+    Transparency = NumberSequence.new{
+        NumberSequenceKeypoint.new(0.0, 1),
+        NumberSequenceKeypoint.new(1.0, 0)
+    };
+    Parent = ValueOverlay;
+});
+
+local isRainbowMode = false;
+local rainbowConnection;
+local currentHue = 0;
+
+RainbowToggle.MouseButton1Click:Connect(function()
+    isRainbowMode = not isRainbowMode;
+    RainbowToggle.Text = isRainbowMode and "ON" or "R";
+    
+    if isRainbowMode then
+        rainbowConnection = RenderStepped:Connect(function()
+            currentHue = currentHue + 0.005;
+            if currentHue > 1 then currentHue = 0 end;
+            
+            -- Update the visual hue display
+            local newColor = Color3.fromHSV(currentHue, 1, 1);
+            SatVibMap.BackgroundColor3 = newColor;
+            SaturationGradient.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
+                ColorSequenceKeypoint.new(1.0, newColor)
+            };
+            
+            -- ACTUALLY UPDATE THE COLOR PICKER VALUE
+            ColorPicker.Hue = currentHue;
+            ColorPicker:Display();
+        end);
+    else
+        if rainbowConnection then
+            rainbowConnection:Disconnect();
+        end;
+    end;
+end);
+
+-- Fix the SatVibMap interaction to work with the frame instead of image
+SatVibMap.InputBegan:Connect(function(Input)
+    if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+        while InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1 or Enum.UserInputType.Touch) do
+            local MinX = SatVibMap.AbsolutePosition.X;
+            local MaxX = MinX + SatVibMap.AbsoluteSize.X;
+            local MouseX = math.clamp(Mouse.X, MinX, MaxX);
+
+            local MinY = SatVibMap.AbsolutePosition.Y;
+            local MaxY = MinY + SatVibMap.AbsoluteSize.Y;
+            local MouseY = math.clamp(Mouse.Y, MinY, MaxY);
+
+            ColorPicker.Sat = (MouseX - MinX) / (MaxX - MinX);
+            ColorPicker.Vib = 1 - ((MouseY - MinY) / (MaxY - MinY));
+            ColorPicker:Display();
+
+            -- Update the background color based on current hue when not in rainbow mode
+            if not isRainbowMode then
+                local newColor = Color3.fromHSV(ColorPicker.Hue, 1, 1);
+                SatVibMap.BackgroundColor3 = newColor;
+                SaturationGradient.Color = ColorSequence.new{
+                    ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
+                    ColorSequenceKeypoint.new(1.0, newColor)
+                };
+            end;
+
+            RenderStepped:Wait();
+        end;
+
+        Library:AttemptSave();
+    end;
+end);
 		local CursorOuter = Library:Create('ImageLabel', {
 			AnchorPoint = Vector2.new(0.5, 0.5);
 			Size = UDim2.new(0, 6, 0, 6);
