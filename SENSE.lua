@@ -1,5 +1,3 @@
--- Enhanced ESP System with Instance Support
--- Original code enhanced with NPC/Instance drawing capabilities and better weapon detection
 
 -- Load utilities
 local Maid = loadstring(game:HttpGet("https://raw.githubusercontent.com/AccountBurner/Utility/refs/heads/main/Maid.lua"))()
