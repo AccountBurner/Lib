@@ -4,7 +4,7 @@ local httprequest = (syn and syn.request) or (http and http.request) or http_req
 local getassetfunc = getcustomasset or getsynasset
 local ThemeManager = {} do
 	ThemeManager.Folder = 'Orange'
-
+	ThemeManager.DefaultTheme = 'Orange' 
 	ThemeManager.Library = nil
 	ThemeManager.BuiltInThemes = {
 		['Orange'] 		= { 1, httpService:JSONDecode('{"FontColor":"ffffff","MainColor":"1e1e1e","AccentColor":"ff4c00","BackgroundColor":"232323","OutlineColor":"141414"}') },
