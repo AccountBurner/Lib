@@ -2411,9 +2411,13 @@ do
 
 		function Toggle:Display()
 			if IsKrampus then setthreadcaps(8) end
+			
+			local targetBgColor = Toggle.Value and Library.AccentColor or Library.MainColor;
+			local targetBorderColor = Toggle.Value and Library.AccentColorDark or Library.OutlineColor;
+			
 			TweenService:Create(ToggleInner, TweenInfo.new(0.2, Enum.EasingStyle.Quint), {
-				BackgroundColor3 = Toggle.Value and Library.AccentColor or Library.MainColor;
-				BorderColor3 = Toggle.Value and Library.AccentColorDark or Library.OutlineColor;
+				BackgroundColor3 = targetBgColor;
+				BorderColor3 = targetBorderColor;
 			}):Play();
 		
 			Library.RegistryMap[ToggleInner].Properties.BackgroundColor3 = Toggle.Value and 'AccentColor' or 'MainColor';
@@ -2427,21 +2431,17 @@ do
 
 		function Toggle:SetValue(Bool)
 			Bool = (not not Bool);
-
+		
 			Toggle.Value = Bool;
 			Toggle:Display();
-
+		
 			for _, Addon in next, Toggle.Addons do
 				if Addon.Type == 'KeyPicker' and Addon.SyncToggleState then
 					Addon.Toggled = Bool
 					Addon:Update()
 				end
 			end
-			TweenService:Create(ToggleInner, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
-				BackgroundColor3 = Bool and Library.AccentColor or Library.MainColor;
-				BorderColor3 = Bool and Library.AccentColorDark or Library.OutlineColor;
-			}):Play();
-
+		
 			Library:SafeCallback(Toggle.Callback, Toggle.Value);
 			Library:SafeCallback(Toggle.Changed, Toggle.Value);
 			Library:UpdateDependencyBoxes();
