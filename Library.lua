@@ -857,13 +857,96 @@ do
 			Parent = SatVibMapOuter;
 		});
 
-		local SatVibMap = Library:Create('ImageLabel', {
-			BorderSizePixel = 0;
-			Size = UDim2.new(1, 0, 1, 0);
-			ZIndex = 18;
-			Image = 'rbxassetid://98765432109';
-			Parent = SatVibMapInner;
+		local SatVibMapContainer = Library:Create('Frame', {
+		   BorderSizePixel = 0;
+		   Size = UDim2.new(1, 0, 1, 0);
+		   ZIndex = 18;
+		   BackgroundColor3 = Color3.fromRGB(255, 255, 255);
+		   Parent = SatVibMapInner;
 		});
+		
+		local RainbowToggle = Library:Create('TextButton', {
+		   Size = UDim2.new(0, 20, 0, 20);
+		   Position = UDim2.new(1, -25, 0, 5);
+		   BackgroundColor3 = Library.MainColor;
+		   BorderColor3 = Library.OutlineColor;
+		   Text = "R";
+		   TextSize = 12;
+		   TextColor3 = Library.FontColor;
+		   ZIndex = 25;
+		   Parent = SatVibMapContainer;
+		});
+		
+		Library:AddToRegistry(RainbowToggle, {
+		   BackgroundColor3 = 'MainColor';
+		   BorderColor3 = 'OutlineColor';
+		   TextColor3 = 'FontColor';
+		});
+		
+		local SatVibMap = Library:Create('Frame', {
+		   BorderSizePixel = 0;
+		   Size = UDim2.new(1, 0, 1, 0);
+		   ZIndex = 18;
+		   BackgroundColor3 = Color3.fromRGB(255, 0, 0);
+		   Parent = SatVibMapContainer;
+		});
+		
+		local SaturationGradient = Library:Create('UIGradient', {
+		   Color = ColorSequence.new{
+		       ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
+		       ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 0, 0))
+		   };
+		   Rotation = 0;
+		   Parent = SatVibMap;
+		});
+		
+		local ValueOverlay = Library:Create('Frame', {
+		   BorderSizePixel = 0;
+		   Size = UDim2.new(1, 0, 1, 0);
+		   ZIndex = 19;
+		   BackgroundColor3 = Color3.fromRGB(0, 0, 0);
+		   Parent = SatVibMap;
+		});
+		
+		local ValueGradient = Library:Create('UIGradient', {
+		   Color = ColorSequence.new{
+		       ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
+		       ColorSequenceKeypoint.new(1.0, Color3.fromRGB(0, 0, 0))
+		   };
+		   Rotation = 90;
+		   Transparency = NumberSequence.new{
+		       NumberSequenceKeypoint.new(0.0, 1),
+		       NumberSequenceKeypoint.new(1.0, 0)
+		   };
+		   Parent = ValueOverlay;
+		});
+		
+		local isRainbowMode = false;
+		local rainbowConnection;
+		local currentHue = 0;
+		
+		RainbowToggle.MouseButton1Click:Connect(function()
+		   isRainbowMode = not isRainbowMode;
+		   RainbowToggle.Text = isRainbowMode and "ON" or "R";
+		   
+		   if isRainbowMode then
+		       rainbowConnection = RenderStepped:Connect(function()
+		           currentHue = currentHue + 0.005;
+		           if currentHue > 1 then currentHue = 0 end;
+		           
+		           local newColor = Color3.fromHSV(currentHue, 1, 1);
+		           SatVibMap.BackgroundColor3 = newColor;
+		           SaturationGradient.Color = ColorSequence.new{
+		               ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
+		               ColorSequenceKeypoint.new(1.0, newColor)
+		           };
+		       end);
+		   else
+		       if rainbowConnection then
+		           rainbowConnection:Disconnect();
+		       end;
+		   end;
+		end);
 
 		local CursorOuter = Library:Create('ImageLabel', {
 			AnchorPoint = Vector2.new(0.5, 0.5);
