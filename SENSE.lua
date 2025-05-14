@@ -642,16 +642,23 @@ function InstanceEspObject:Update()
 		self.direction = Vector2.new(cos(angle), sin(angle));
 	end
 	
-	-- Update health if available
-	local humanoid = self.instance:FindFirstChildOfClass("Humanoid");
-	if humanoid then
-		self.health = humanoid.Health;
-		self.maxHealth = humanoid.MaxHealth;
-	else
-		self.health = 100;
-		self.maxHealth = 100;
-	end
+if self.interface.getHealth then
+    self.health, self.maxHealth = self.interface.getHealth(self.instance);
+    if not self.health or not self.maxHealth then
+        self.health = 100;
+        self.maxHealth = 100;
+    end
+else
+    local humanoid = self.instance:FindFirstChildOfClass("Humanoid");
+    if humanoid then
+        self.health = humanoid.Health;
+        self.maxHealth = humanoid.MaxHealth;
+    else
+        self.health = 100;
+        self.maxHealth = 100;
+    end
 end
+
 
 function InstanceEspObject:Render()
 	if not self.drawings or not self.drawings.visible then
