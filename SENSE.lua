@@ -191,9 +191,27 @@ function EspObject:create(class, properties)
 end
 
 function EspObject:Destruct()
+	if self.drawings then
+		for _, drawings in pairs(self.drawings) do
+			if type(drawings) == "table" then
+				for _, drawing in pairs(drawings) do
+					if type(drawing) == "table" then
+						for _, line in pairs(drawing) do
+							if line.Visible ~= nil then
+								line.Visible = false;
+							end
+						end
+					elseif drawing.Visible ~= nil then
+						drawing.Visible = false;
+					end
+				end
+			end
+		end
+	end
+	
 	self.maid:Cleanup();
 	clear(self);
-end
+ end
 
 function EspObject:Update()
 	local interface = self.interface;
@@ -536,16 +554,34 @@ function InstanceEspObject:create(class, properties)
 end
 
 function InstanceEspObject:Destruct()
-    if self.interface and self.interface._instanceCache then
-        local cache = self.interface._instanceCache;
-        if cache[self.instance] then
-            cache[self.instance] = nil;
-        end
-    end
-    
-    self.maid:Cleanup();
-    clear(self);
-end
+	if self.drawings then
+		for _, drawings in pairs(self.drawings) do
+			if type(drawings) == "table" then
+				for _, drawing in pairs(drawings) do
+					if type(drawing) == "table" then
+						for _, line in pairs(drawing) do
+							if line.Visible ~= nil then
+								line.Visible = false;
+							end
+						end
+					elseif drawing.Visible ~= nil then
+						drawing.Visible = false;
+					end
+				end
+			end
+		end
+	end
+	
+	if self.interface and self.interface._instanceCache then
+		local cache = self.interface._instanceCache;
+		if cache[self.instance] then
+			cache[self.instance] = nil;
+		end
+	end
+	
+	self.maid:Cleanup();
+	clear(self);
+ end
 
 function InstanceEspObject:Update()
 	if not self.instance or not self.instance.Parent then
@@ -816,7 +852,6 @@ function InstanceEspObject:Render()
 	end
 end
 
--- Fixed instance class for simple text ESP with better cleanup
 local InstanceObject = {};
 InstanceObject.__index = InstanceObject;
 
@@ -826,7 +861,6 @@ function InstanceObject.new(instance, options)
 	self.options = assert(options, "Missing argument #2 (table expected)");
 	self.maid = Maid.new();
 	
-	-- Add connection removed event to clean up automatically
 	self.removedConnection = instance.AncestryChanged:Connect(function()
 		if not instance.Parent then
 			self:Destruct();
