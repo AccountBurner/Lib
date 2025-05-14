@@ -329,7 +329,11 @@ function EspObject:Render()
 		healthText.Transparency = options.healthTextColor[2];
 		healthText.Outline = options.healthTextOutline;
 		healthText.OutlineColor = options.healthTextOutlineColor;
-		healthText.Position = lerp2(barTo, barFrom, self.health/self.maxHealth) - healthText.TextBounds*0.5 - HEALTH_TEXT_OFFSET;
+		local healthRatio = 0;
+		if self.health and self.maxHealth and self.maxHealth > 0 then
+		    healthRatio = math.max(0, math.min(1, self.health / self.maxHealth));
+		end;
+		healthText.Position = lerp2(barTo, barFrom, healthRatio) - Vector2.new(healthText.TextBounds.X/2, healthText.TextBounds.Y/2) - HEALTH_TEXT_OFFSET;
 	end
 
 	visible.name.Visible = enabled and onScreen and options.name;
