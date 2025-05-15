@@ -15,7 +15,7 @@ local GetHUI = gethui or (function() return CoreGui end);
 local IsKrampus = ((identifyexecutor or (function() return "" end))():lower() == "krampus");
 
 local ScreenGui = Instance.new('ScreenGui');
-ScreenGui.Name = "BlackkingGui";
+ScreenGui.Name = "Core";
 ProtectGui(ScreenGui);
 
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global;
@@ -613,18 +613,6 @@ function Library:OnHighlight(HighlightInstance, Instance, Properties, Properties
 	HighlightInstance.MouseLeave:Connect(function()
 		undoHighlight()
 	end)
-end;
-function Library:StyleScrollbar(ScrollFrame)
-    ScrollFrame.ScrollBarThickness = 4;
-    ScrollFrame.ScrollBarImageColor3 = Library.AccentColor;
-    ScrollFrame.ScrollBarImageTransparency = 0.3;
-    ScrollFrame.TopImage = '';
-    ScrollFrame.MidImage = '';
-    ScrollFrame.BottomImage = '';
-    
-    Library:AddToRegistry(ScrollFrame, {
-        ScrollBarImageColor3 = 'AccentColor';
-    });
 end;
 
 function Library:MouseIsOverOpenedFrame(Input)
@@ -1868,58 +1856,103 @@ do
 		});
 	end;
 
-	function Funcs:AddLabel(Text, DoesWrap)
-		local Label = {};
-
-		local Groupbox = self;
-		local Container = Groupbox.Container;
-
-		local TextLabel = Library:CreateLabel({
-			Size = UDim2.new(1, -4, 0, 15);
-			TextSize = 14;
-			Text = Text;
-			TextWrapped = DoesWrap or false,
-			TextXAlignment = Enum.TextXAlignment.Left;
-			ZIndex = 5;
-			Parent = Container;
-		});
-
-		if DoesWrap then
-			local Y = select(2, Library:GetTextBounds(Text, Library.Font, 14, Vector2.new(TextLabel.AbsoluteSize.X, math.huge)))
-			TextLabel.Size = UDim2.new(1, -4, 0, Y)
-		else
-			Library:Create('UIListLayout', {
-				Padding = UDim.new(0, 4);
-				FillDirection = Enum.FillDirection.Horizontal;
-				HorizontalAlignment = Enum.HorizontalAlignment.Right;
-				SortOrder = Enum.SortOrder.LayoutOrder;
-				Parent = TextLabel;
-			});
-		end
-
-		Label.TextLabel = TextLabel;
-		Label.Container = Container;
-
-		function Label:SetText(Text)
-			TextLabel.Text = Text
-
-			if DoesWrap then
-				local Y = select(2, Library:GetTextBounds(Text, Library.Font, 14, Vector2.new(TextLabel.AbsoluteSize.X, math.huge)))
-				TextLabel.Size = UDim2.new(1, -4, 0, Y)
-			end
-
-			Groupbox:Resize();
-		end
-
-		if (not DoesWrap) then
-			setmetatable(Label, BaseAddons);
-		end
-
-		Groupbox:AddBlank(5);
-		Groupbox:Resize();
-
-		return Label;
-	end;
+    function Funcs:AddLabel(Text, DoesWrap)
+        local Label = {};
+     
+        local Groupbox = self;
+        local Container = Groupbox.Container;
+     
+        local LabelContainer = Library:Create('Frame', {
+            BackgroundTransparency = 1;
+            Size = UDim2.new(1, -4, 0, 15);
+            ZIndex = 5;
+            Parent = Container;
+        });
+     
+        local TextLabel = Library:CreateLabel({
+            Size = UDim2.new(1, 0, 1, 0);
+            TextSize = 14;
+            Text = Text;
+            TextWrapped = DoesWrap or false,
+            TextXAlignment = Enum.TextXAlignment.Left;
+            ZIndex = 5;
+            Parent = LabelContainer;
+        });
+     
+        local Highlight = Library:Create('Frame', {
+            BackgroundColor3 = Library.AccentColor;
+            BackgroundTransparency = 0.9;
+            BorderSizePixel = 0;
+            Size = UDim2.new(0, 0, 1, 0);
+            ZIndex = 4;
+            Parent = LabelContainer;
+        });
+     
+        Library:AddToRegistry(Highlight, {
+            BackgroundColor3 = 'AccentColor';
+        });
+     
+        if DoesWrap then
+            local Y = select(2, Library:GetTextBounds(Text, Library.Font, 14, Vector2.new(TextLabel.AbsoluteSize.X, math.huge)))
+            LabelContainer.Size = UDim2.new(1, -4, 0, Y)
+            TextLabel.Size = UDim2.new(1, 0, 1, 0)
+        else
+            Library:Create('UIListLayout', {
+                Padding = UDim.new(0, 4);
+                FillDirection = Enum.FillDirection.Horizontal;
+                HorizontalAlignment = Enum.HorizontalAlignment.Right;
+                SortOrder = Enum.SortOrder.LayoutOrder;
+                Parent = TextLabel;
+            });
+        end
+     
+        LabelContainer.MouseEnter:Connect(function()
+            if Label._highlightTween then
+                Label._highlightTween:Cancel()
+            end
+            Label._highlightTween = TweenService:Create(Highlight, 
+                TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+                Size = UDim2.new(1, 0, 1, 0);
+                BackgroundTransparency = 0.95;
+            });
+            Label._highlightTween:Play();
+        end)
+     
+        LabelContainer.MouseLeave:Connect(function()
+            if Label._highlightTween then
+                Label._highlightTween:Cancel()
+            end
+            Label._highlightTween = TweenService:Create(Highlight, 
+                TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 0, 1, 0);
+                BackgroundTransparency = 0.9;
+            });
+            Label._highlightTween:Play();
+        end)
+     
+        Label.TextLabel = TextLabel;
+        Label.Container = Container;
+     
+        function Label:SetText(Text)
+            TextLabel.Text = Text
+     
+            if DoesWrap then
+                local Y = select(2, Library:GetTextBounds(Text, Library.Font, 14, Vector2.new(TextLabel.AbsoluteSize.X, math.huge)))
+                LabelContainer.Size = UDim2.new(1, -4, 0, Y)
+            end
+     
+            Groupbox:Resize();
+        end
+     
+        if (not DoesWrap) then
+            setmetatable(Label, BaseAddons);
+        end
+     
+        Groupbox:AddBlank(5);
+        Groupbox:Resize();
+     
+        return Label;
+     end;
 
 	function Funcs:AddButton(...)
 		-- TODO: Eventually redo this
@@ -2420,21 +2453,23 @@ do
 		if type(Info.Tooltip) == 'string' then
 			Library:AddToolTip(Info.Tooltip, ToggleRegion)
 		end
-
-		function Toggle:Display()
-			if IsKrampus then setthreadcaps(8) end
-			
-			local targetBgColor = Toggle.Value and Library.AccentColor or Library.MainColor;
-			local targetBorderColor = Toggle.Value and Library.AccentColorDark or Library.OutlineColor;
-			
-			TweenService:Create(ToggleInner, TweenInfo.new(0.2, Enum.EasingStyle.Quint), {
-				BackgroundColor3 = targetBgColor;
-				BorderColor3 = targetBorderColor;
-			}):Play();
-		
-			Library.RegistryMap[ToggleInner].Properties.BackgroundColor3 = Toggle.Value and 'AccentColor' or 'MainColor';
-			Library.RegistryMap[ToggleInner].Properties.BorderColor3 = Toggle.Value and 'AccentColorDark' or 'OutlineColor';
-		end;
+        
+        function Toggle:Display()
+            if IsKrampus then setthreadcaps(8) end
+            
+            local targetBgColor = Toggle.Value and Library.AccentColor or Library.MainColor;
+            local targetBorderColor = Toggle.Value and Library.AccentColorDark or Library.OutlineColor;
+            
+            if Toggle._colorTween then
+                Toggle._colorTween:Cancel()
+            end
+            
+            ToggleInner.BackgroundColor3 = targetBgColor;
+            ToggleInner.BorderColor3 = targetBorderColor;
+            
+            Library.RegistryMap[ToggleInner].Properties.BackgroundColor3 = Toggle.Value and 'AccentColor' or 'MainColor';
+            Library.RegistryMap[ToggleInner].Properties.BorderColor3 = Toggle.Value and 'AccentColorDark' or 'OutlineColor';
+        end;
 
 		function Toggle:OnChanged(Func)
 			Toggle.Changed = Func;
@@ -2443,17 +2478,17 @@ do
 
 		function Toggle:SetValue(Bool)
 			Bool = (not not Bool);
-		
+
 			Toggle.Value = Bool;
 			Toggle:Display();
-		
+
 			for _, Addon in next, Toggle.Addons do
 				if Addon.Type == 'KeyPicker' and Addon.SyncToggleState then
 					Addon.Toggled = Bool
 					Addon:Update()
 				end
 			end
-		
+
 			Library:SafeCallback(Toggle.Callback, Toggle.Value);
 			Library:SafeCallback(Toggle.Changed, Toggle.Value);
 			Library:UpdateDependencyBoxes();
@@ -2602,25 +2637,32 @@ do
 			Fill.BorderColor3 = Library.AccentColorDark;
 		end;
 		
-		function Slider:Display()
-			local Suffix = Info.Suffix or '';
-		
-			if Info.Compact then
-				DisplayLabel.Text = Info.Text .. ': ' .. Slider.Value .. Suffix
-			elseif Info.HideMax then
-				DisplayLabel.Text = string.format('%s', Slider.Value .. Suffix)
-			else
-				DisplayLabel.Text = string.format('%s/%s', Slider.Value .. Suffix, Slider.Max .. Suffix);
-			end
-		
-			local X = Library:MapValue(Slider.Value, Slider.Min, Slider.Max, 0, 1);
-			
-			TweenService:Create(Fill, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
-				Size = UDim2.new(X, 0, 1, 0);
-			}):Play();
-		
-			HideBorderRight.Visible = not (X == 1 or X == 0);
-		end;
+        function Slider:Display()
+            local Suffix = Info.Suffix or '';
+         
+            if Info.Compact then
+                DisplayLabel.Text = Info.Text .. ': ' .. Slider.Value .. Suffix
+            elseif Info.HideMax then
+                DisplayLabel.Text = string.format('%s', Slider.Value .. Suffix)
+            else
+                DisplayLabel.Text = string.format('%s/%s', Slider.Value .. Suffix, Slider.Max .. Suffix);
+            end
+         
+            local X = Library:MapValue(Slider.Value, Slider.Min, Slider.Max, 0, 1);
+            
+            if Slider._fillTween then
+                Slider._fillTween:Cancel()
+            end
+            
+            Slider._fillTween = TweenService:Create(Fill, 
+                TweenInfo.new(0.08, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+                Size = UDim2.new(X, 0, 1, 0);
+            });
+            
+            Slider._fillTween:Play();
+         
+            HideBorderRight.Visible = not (X == 1 or X == 0);
+         end;
 
 		function Slider:OnChanged(Func)
 			Slider.Changed = Func;
@@ -2823,12 +2865,12 @@ do
 			Parent = DropdownInner;
 		});
 
-		local DropdownArrow = Library:CreateLabel({
+		local DropdownArrow = Library:Create('ImageLabel', {
 			AnchorPoint = Vector2.new(0, 0.5);
+			BackgroundTransparency = 1;
 			Position = UDim2.new(1, -16, 0.5, 0);
 			Size = UDim2.new(0, 12, 0, 12);
-			Text = "▼";
-			TextSize = 10;
+			Image = 'http://www.roblox.com/asset/?id=6282522798';
 			ZIndex = 8;
 			Parent = DropdownInner;
 		});
@@ -2906,7 +2948,6 @@ do
 			ScrollBarThickness = 3,
 			ScrollBarImageColor3 = Library.AccentColor,
 		});
-		Library:StyleScrollbar(Scrolling);
 
 		Library:AddToRegistry(Scrolling, {
 			ScrollBarImageColor3 = 'AccentColor'
@@ -3082,45 +3123,70 @@ do
 
 			Dropdown:BuildDropdownList();
 		end;
+        function Dropdown:OpenDropdown()
+            if Library.IsMobile then
+                Library.CanDrag = false;
+            end;
+         
+            if Dropdown._sizeTween then
+                Dropdown._sizeTween:Cancel()
+            end
+            if Dropdown._arrowTween then
+                Dropdown._arrowTween:Cancel()
+            end
+         
+            ListOuter.Size = UDim2.fromOffset(DropdownOuter.AbsoluteSize.X, 0);
+            ListOuter.Visible = true;
+            
+            local targetHeight = math.clamp(#Dropdown.Values * 20, 0, MAX_DROPDOWN_ITEMS * 20) + 1;
+            
+            Dropdown._sizeTween = TweenService:Create(ListOuter, 
+                TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                Size = UDim2.fromOffset(DropdownOuter.AbsoluteSize.X, targetHeight)
+            });
+            
+            Dropdown._arrowTween = TweenService:Create(DropdownArrow, 
+                TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                Rotation = 180
+            });
+            
+            Dropdown._sizeTween:Play();
+            Dropdown._arrowTween:Play();
+            
+            Library.OpenedFrames[ListOuter] = true;
+         end;
+         
+         function Dropdown:CloseDropdown()
+            if Library.IsMobile then            
+                Library.CanDrag = true;
+            end;
+         
+            if Dropdown._sizeTween then
+                Dropdown._sizeTween:Cancel()
+            end
+            if Dropdown._arrowTween then
+                Dropdown._arrowTween:Cancel()
+            end
+            
+            Dropdown._sizeTween = TweenService:Create(ListOuter, 
+                TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
+                Size = UDim2.fromOffset(DropdownOuter.AbsoluteSize.X, 0)
+            });
+            
+            Dropdown._arrowTween = TweenService:Create(DropdownArrow, 
+                TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
+                Rotation = 0
+            });
+            
+            Dropdown._sizeTween:Play();
+            Dropdown._arrowTween:Play();
+            
+            Dropdown._sizeTween.Completed:Connect(function()
+                ListOuter.Visible = false;
+                Library.OpenedFrames[ListOuter] = nil;
+            end);
+         end;
 
-		function Dropdown:OpenDropdown()
-			if Library.IsMobile then
-				Library.CanDrag = false;
-			end;
-
-			ListOuter.Size = UDim2.fromOffset(DropdownOuter.AbsoluteSize.X, 0);
-			ListOuter.Visible = true;
-			
-			local targetHeight = math.clamp(#Dropdown.Values * 20, 0, MAX_DROPDOWN_ITEMS * 20) + 1;
-			
-			TweenService:Create(ListOuter, TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-				Size = UDim2.fromOffset(DropdownOuter.AbsoluteSize.X, targetHeight)
-			}):Play();
-			
-			TweenService:Create(DropdownArrow, TweenInfo.new(0.15, Enum.EasingStyle.Quint), {
-				Rotation = 180
-			}):Play();
-			
-			Library.OpenedFrames[ListOuter] = true;
-		end;
-
-		function Dropdown:CloseDropdown()
-			if Library.IsMobile then            
-				Library.CanDrag = true;
-			end;
-
-			TweenService:Create(ListOuter, TweenInfo.new(0.15, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
-				Size = UDim2.fromOffset(DropdownOuter.AbsoluteSize.X, 0)
-			}):Play();
-			
-			TweenService:Create(DropdownArrow, TweenInfo.new(0.15, Enum.EasingStyle.Quint), {
-				Rotation = 0
-			}):Play();
-			
-			task.wait(0.15);
-			ListOuter.Visible = false;
-			Library.OpenedFrames[ListOuter] = nil;
-		end;
 		function Dropdown:OnChanged(Func)
 			Dropdown.Changed = Func;
 			Func(Dropdown.Value);
@@ -3815,7 +3881,6 @@ function Library:CreateWindow(...)
 			ZIndex = 2;
 			Parent = TabFrame;
 		});
-		Library:StyleScrollbar(LeftSide);
 
 		local RightSide = Library:Create('ScrollingFrame', {
 			BackgroundTransparency = 1;
@@ -3829,7 +3894,6 @@ function Library:CreateWindow(...)
 			ZIndex = 2;
 			Parent = TabFrame;
 		});
-		Library:StyleScrollbar(RightSide);
 
 		Library:Create('UIListLayout', {
 			Padding = UDim.new(0, 8);
