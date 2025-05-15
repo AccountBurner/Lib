@@ -642,22 +642,19 @@ function InstanceEspObject:Update()
 		self.direction = Vector2.new(cos(angle), sin(angle));
 	end
 	
-if self.interface.getHealth then
-    self.health, self.maxHealth = self.interface.getHealth(self.instance);
-    if not self.health or not self.maxHealth then
-        self.health = 100;
-        self.maxHealth = 100;
-    end
-else
-    local humanoid = self.instance:FindFirstChildOfClass("Humanoid");
-    if humanoid then
-        self.health = humanoid.Health;
-        self.maxHealth = humanoid.MaxHealth;
+    if self.interface.getHealth then
+        self.health, self.maxHealth = self.interface.getHealth(self.instance);
     else
-        self.health = 100;
-        self.maxHealth = 100;
+        local humanoid = self.instance:FindFirstChildOfClass("Humanoid");
+        if humanoid then
+            self.health = humanoid.Health;
+            self.maxHealth = humanoid.MaxHealth;
+        else
+            self.health = 100;
+            self.maxHealth = 100;
+        end
     end
-end
+end 
 
 
 function InstanceEspObject:Render()
@@ -742,7 +739,7 @@ function InstanceEspObject:Render()
 		end
 	end
 	
-	visible.healthText.Visible = enabled and onScreen and options.healthText and self.health;
+    visible.healthText.Visible = enabled and onScreen and options.healthText and self.health ~= nil;
 	if visible.healthText.Visible then
 		local barFrom = corners.topLeft - HEALTH_BAR_OFFSET;
 		local barTo = corners.bottomLeft - HEALTH_BAR_OFFSET;
@@ -1348,5 +1345,4 @@ function EspInterface.SetupNpcEsp(options)
 	
 	return npcOptions;
 end]]
-
 return EspInterface;
