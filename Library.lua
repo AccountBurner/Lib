@@ -3879,7 +3879,7 @@ function Library:CreateWindow(...)
 	});
 
 	local WindowLabel = Library:CreateLabel({
-		Position = UDim2.new(0, 20, 0, 4); 
+		Position = UDim2.new(0, 17, 0, 4); 
 		Size = UDim2.new(1, -40, 0, 25); 
 		Text = Config.Title or '';
 		TextXAlignment = Enum.TextXAlignment.Left;
@@ -4016,6 +4016,11 @@ function Library:CreateWindow(...)
 			Size = UDim2.new(0, TabButtonWidth + 8 + 4, 0.85, 0);
 			ZIndex = 1;
 			Parent = TabArea;
+		});
+
+		Library:Create('UICorner', {
+			CornerRadius = UDim.new(0, 4);
+			Parent = TabButton;
 		});
 
 		Library:AddToRegistry(TabButton, {
@@ -4734,4 +4739,4 @@ Players.PlayerAdded:Connect(OnPlayerChange);
 Players.PlayerRemoving:Connect(OnPlayerChange);
 
 getgenv().Library = Library
-return Library
+return Library;
