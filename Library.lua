@@ -3879,8 +3879,8 @@ function Library:CreateWindow(...)
 	});
 
 	local WindowLabel = Library:CreateLabel({
-		Position = UDim2.new(0, 12, 0, 4); 
-		Size = UDim2.new(0, 0, 0, 25);
+		Position = UDim2.new(0, 20, 0, 4); 
+		Size = UDim2.new(1, -40, 0, 25); 
 		Text = Config.Title or '';
 		TextXAlignment = Enum.TextXAlignment.Left;
 		ZIndex = 1;
