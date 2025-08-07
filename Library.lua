@@ -793,21 +793,6 @@ do
 			Parent = ToggleLabel;
 		});
 
-		-- Transparency image taken from https://github.com/matas3535/SplixPrivateDrawingLibrary/blob/main/Library.lua cus i'm lazy
-		local CheckerFrame = Library:Create('ImageLabel', {
-			BorderSizePixel = 0;
-			Size = UDim2.new(0, 27, 0, 13);
-			ZIndex = 5;
-			Image = 'http://www.roblox.com/asset/?id=12977615774';
-			Visible = not not Info.Transparency;
-			Parent = DisplayFrame;
-		});
-
-		-- 1/16/23
-		-- Rewrote this to be placed inside the Library ScreenGui
-		-- There was some issue which caused RelativeOffset to be way off
-		-- Thus the color picker would never show
-
 		local PickerFrameOuter = Library:Create('Frame', {
 			Name = 'Color';
 			BackgroundColor3 = Color3.new(1, 1, 1);
@@ -1002,24 +987,6 @@ do
 		        Library:AttemptSave();
 		    end;
 		end);
-		local CursorOuter = Library:Create('ImageLabel', {
-			AnchorPoint = Vector2.new(0.5, 0.5);
-			Size = UDim2.new(0, 6, 0, 6);
-			BackgroundTransparency = 1;
-			Image = 'http://www.roblox.com/asset/?id=9619665977';
-			ImageColor3 = Color3.new(0, 0, 0);
-			ZIndex = 19;
-			Parent = SatVibMap;
-		});
-
-		local CursorInner = Library:Create('ImageLabel', {
-			Size = UDim2.new(0, CursorOuter.Size.X.Offset - 2, 0, CursorOuter.Size.Y.Offset - 2);
-			Position = UDim2.new(0, 1, 0, 1);
-			BackgroundTransparency = 1;
-			Image = 'http://www.roblox.com/asset/?id=9619665977';
-			ZIndex = 20;
-			Parent = CursorOuter;
-		})
 
 		local HueSelectorOuter = Library:Create('Frame', {
 			BorderColor3 = Color3.new(0, 0, 0);
@@ -1122,15 +1089,7 @@ do
 				Parent = TransparencyBoxOuter;
 			});
 
-			Library:AddToRegistry(TransparencyBoxInner, { BorderColor3 = 'OutlineColor' });
-
-			Library:Create('ImageLabel', {
-				BackgroundTransparency = 1;
-				Size = UDim2.new(1, 0, 1, 0);
-				Image = 'http://www.roblox.com/asset/?id=12978095818';
-				ZIndex = 20;
-				Parent = TransparencyBoxInner;
-			});
+			Library:AddToRegistry(TransparencyBoxInner, { BorderColor3 = 'OutlineColor' })
 
 			TransparencyCursor = Library:Create('Frame', { 
 				BackgroundColor3 = Color3.new(1, 1, 1);
@@ -1147,7 +1106,7 @@ do
 			Position = UDim2.fromOffset(5, 5);
 			TextXAlignment = Enum.TextXAlignment.Left;
 			TextSize = 14;
-			Text = ColorPicker.Title,--Info.Default;
+			Text = ColorPicker.Title,
 			TextWrapped = false;
 			ZIndex = 16;
 			Parent = PickerFrameInner;
@@ -1347,7 +1306,6 @@ do
 				TransparencyCursor.Position = UDim2.new(1 - ColorPicker.Transparency, 0, 0, 0);
 			end;
 
-			CursorOuter.Position = UDim2.new(ColorPicker.Sat, 0, 1 - ColorPicker.Vib, 0);
 			HueCursor.Position = UDim2.new(0, 0, ColorPicker.Hue, 0);
 
 			HueBox.Text = '#' .. ColorPicker.Value:ToHex()
@@ -2835,14 +2793,14 @@ do
 			Info.Values = GetTeamsString();
 			Info.AllowNull = true;
 		end;
-
+	
 		assert(Info.Values, 'AddDropdown: Missing dropdown value list.');
 		assert(Info.AllowNull or Info.Default, 'AddDropdown: Missing default value. Pass `AllowNull` as true if this was intentional.')
-
+	
 		if (not Info.Text) then
 			Info.Compact = true;
 		end;
-
+	
 		local Dropdown = {
 			Values = Info.Values;
 			Value = Info.Multi and {};
@@ -2850,13 +2808,15 @@ do
 			Type = 'Dropdown';
 			SpecialType = Info.SpecialType;
 			Callback = Info.Callback or function(Value) end;
+			isOpen = false;
+			isAnimating = false;
 		};
-
+	
 		local Groupbox = self;
 		local Container = Groupbox.Container;
-
+	
 		local RelativeOffset = 0;
-
+	
 		if not Info.Compact then
 			local DropdownLabel = Library:CreateLabel({
 				Size = UDim2.new(1, 0, 0, 10);
@@ -2867,16 +2827,16 @@ do
 				ZIndex = 5;
 				Parent = Container;
 			});
-
+	
 			Groupbox:AddBlank(3);
 		end
-
+	
 		for _, Element in next, Container:GetChildren() do
 			if not Element:IsA('UIListLayout') then
 				RelativeOffset = RelativeOffset + Element.Size.Y.Offset;
 			end;
 		end;
-
+	
 		local DropdownOuter = Library:Create('Frame', {
 			BackgroundColor3 = Color3.new(0, 0, 0);
 			BorderColor3 = Color3.new(0, 0, 0);
@@ -2884,11 +2844,11 @@ do
 			ZIndex = 5;
 			Parent = Container;
 		});
-
+	
 		Library:AddToRegistry(DropdownOuter, {
 			BorderColor3 = 'Black';
 		});
-
+	
 		local DropdownInner = Library:Create('Frame', {
 			BackgroundColor3 = Library.MainColor;
 			BorderColor3 = Library.OutlineColor;
@@ -2897,12 +2857,12 @@ do
 			ZIndex = 6;
 			Parent = DropdownOuter;
 		});
-
+	
 		Library:AddToRegistry(DropdownInner, {
 			BackgroundColor3 = 'MainColor';
 			BorderColor3 = 'OutlineColor';
 		});
-
+	
 		Library:Create('UIGradient', {
 			Color = ColorSequence.new({
 				ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
@@ -2911,17 +2871,18 @@ do
 			Rotation = 90;
 			Parent = DropdownInner;
 		});
-
+	
 		local DropdownArrow = Library:Create('ImageLabel', {
 			AnchorPoint = Vector2.new(0, 0.5);
 			BackgroundTransparency = 1;
 			Position = UDim2.new(1, -16, 0.5, 0);
 			Size = UDim2.new(0, 12, 0, 12);
-			Image = 'http://www.roblox.com/asset/?id=6282522798';
+			Image = 'rbxassetid://6034818372';
+			Rotation = 0;
 			ZIndex = 8;
 			Parent = DropdownInner;
 		});
-
+	
 		local ItemList = Library:CreateLabel({
 			Position = UDim2.new(0, 5, 0, 0);
 			Size = UDim2.new(1, -25, 1, 0);
@@ -2933,26 +2894,27 @@ do
 			ZIndex = 7;
 			Parent = DropdownInner;
 		});
-
+	
 		Library:OnHighlight(DropdownOuter, DropdownOuter,
 			{ BorderColor3 = 'AccentColor' },
 			{ BorderColor3 = 'Black' }
 		);
-
+	
 		if type(Info.Tooltip) == 'string' then
 			Library:AddToolTip(Info.Tooltip, DropdownOuter)
 		end
-
+	
 		local MAX_DROPDOWN_ITEMS = 8;
-
+	
 		local ListOuter = Library:Create('Frame', {
 			BackgroundColor3 = Color3.new(0, 0, 0);
 			BorderColor3 = Color3.new(0, 0, 0);
+			Size = UDim2.new(0, 0, 0, 0);
 			ZIndex = 20;
 			Visible = false;
 			Parent = ScreenGui;
 		});
-
+	
 		local BorderFrame = Library:Create('Frame', {
 			BackgroundColor3 = Color3.new(0, 0, 0);
 			BackgroundTransparency = 0.5;
@@ -2961,7 +2923,7 @@ do
 			ZIndex = 19;
 			Parent = ListOuter;
 		});
-
+	
 		local function RecalculateListPosition()
 			local dropdownPos = DropdownOuter.AbsolutePosition;
 			local dropdownSize = DropdownOuter.AbsoluteSize;
@@ -2976,18 +2938,18 @@ do
 			
 			ListOuter.Position = UDim2.fromOffset(dropdownPos.X, yPos);
 		end;
-
+	
 		local function RecalculateListSize(YSize)
 			local Y = YSize or math.clamp(#Dropdown.Values * 20, 0, MAX_DROPDOWN_ITEMS * 20) + 1;
 			ListOuter.Size = UDim2.fromOffset(DropdownOuter.AbsoluteSize.X, Y)
 		end;
-
+	
 		RecalculateListPosition();
 		RecalculateListSize();
-
+	
 		DropdownOuter:GetPropertyChangedSignal('AbsolutePosition'):Connect(RecalculateListPosition);
 		workspace.CurrentCamera:GetPropertyChangedSignal('ViewportSize'):Connect(RecalculateListPosition);
-
+	
 		local ListInner = Library:Create('Frame', {
 			BackgroundColor3 = Library.MainColor;
 			BorderColor3 = Library.OutlineColor;
@@ -2997,12 +2959,12 @@ do
 			ZIndex = 21;
 			Parent = ListOuter;
 		});
-
+	
 		Library:AddToRegistry(ListInner, {
 			BackgroundColor3 = 'MainColor';
 			BorderColor3 = 'OutlineColor';
 		});
-
+	
 		local Scrolling = Library:Create('ScrollingFrame', {
 			BackgroundTransparency = 1;
 			BorderSizePixel = 0;
@@ -3017,22 +2979,21 @@ do
 			
 			TopImage = 'rbxasset://textures/ui/Scroll/scroll-middle.png',
 			BottomImage = 'rbxasset://textures/ui/Scroll/scroll-middle.png',
-			MidImage = 'rbxasset://textures/ui/Scroll/scroll-middle.png',
 			
 			ScrollBarImageColor3 = Library.AccentColor,
 		});
-
+	
 		Library:AddToRegistry(Scrolling, {
 			ScrollBarImageColor3 = 'AccentColor'
 		})
-
+	
 		Library:Create('UIListLayout', {
 			Padding = UDim.new(0, 0);
 			FillDirection = Enum.FillDirection.Vertical;
 			SortOrder = Enum.SortOrder.LayoutOrder;
 			Parent = Scrolling;
 		});
-
+	
 		local SearchBox;
 		if #Dropdown.Values > 10 or Dropdown.SpecialType == 'Player' then
 			SearchBox = Library:Create('TextBox', {
@@ -3062,50 +3023,50 @@ do
 			Scrolling.Position = UDim2.new(0, 0, 0, 24);
 			Scrolling.Size = UDim2.new(1, 0, 1, -24);
 		end
-
+	
 		function Dropdown:Display()
 			local Values = Dropdown.Values;
 			local Str = '';
-
+	
 			if Info.Multi then
 				for Idx, Value in next, Values do
 					if Dropdown.Value[Value] then
 						Str = Str .. Value .. ', ';
 					end;
 				end;
-
+	
 				Str = Str:sub(1, #Str - 2);
 			else
 				Str = Dropdown.Value or '';
 			end;
-
+	
 			ItemList.Text = (Str == '' and '--' or Str);
 		end;
-
+	
 		function Dropdown:GetActiveValues()
 			if Info.Multi then
 				local T = {};
-
+	
 				for Value, Bool in next, Dropdown.Value do
 					table.insert(T, Value);
 				end;
-
+	
 				return T;
 			else
 				return Dropdown.Value and 1 or 0;
 			end;
 		end;
-
+	
 		function Dropdown:BuildDropdownList(searchTerm)
 			local Values = Dropdown.Values;
 			local Buttons = {};
-
+	
 			for _, Element in next, Scrolling:GetChildren() do
 				if not Element:IsA('UIListLayout') then
 					Element:Destroy();
 				end;
 			end;
-
+	
 			local Count = 0;
 			for Idx, Value in next, Values do
 				if searchTerm and searchTerm ~= '' then
@@ -3115,24 +3076,24 @@ do
 				end
 				
 				local Table = {};
-
+	
 				Count = Count + 1;
-
+	
 				local Button = Library:Create('Frame', {
 					BackgroundColor3 = Library.MainColor;
 					BorderColor3 = Library.OutlineColor;
 					BorderMode = Enum.BorderMode.Middle;
 					Size = UDim2.new(1, 0, 0, 20);
 					ZIndex = 23;
-					Active = true,
+					Active = true;
 					Parent = Scrolling;
 				});
-
+	
 				Library:AddToRegistry(Button, {
 					BackgroundColor3 = 'MainColor';
 					BorderColor3 = 'OutlineColor';
 				});
-
+	
 				local ButtonLabel = Library:CreateLabel({
 					Active = false;
 					Size = UDim2.new(1, -6, 1, 0);
@@ -3143,8 +3104,7 @@ do
 					ZIndex = 25;
 					Parent = Button;
 				});
-
-				-- Simple hover effect without the orange highlight
+	
 				Library:OnHighlight(Button, Button,
 					{ 
 						BorderColor3 = 'AccentColor', 
@@ -3155,22 +3115,22 @@ do
 						ZIndex = 23 
 					}
 				);
-
+	
 				local Selected;
-
+	
 				if Info.Multi then
 					Selected = Dropdown.Value[Value];
 				else
 					Selected = Dropdown.Value == Value;
 				end;
-
+	
 				function Table:UpdateButton()
 					if Info.Multi then
 						Selected = Dropdown.Value[Value];
 					else
 						Selected = Dropdown.Value == Value;
 					end;
-
+	
 					ButtonLabel.TextColor3 = Selected and Library.AccentColor or Library.FontColor;
 					Library.RegistryMap[ButtonLabel].Properties.TextColor3 = Selected and 'AccentColor' or 'FontColor';
 					
@@ -3180,16 +3140,16 @@ do
 						Button.BackgroundTransparency = 0;
 					end
 				end;
-
+	
 				ButtonLabel.InputBegan:Connect(function(Input)
 					if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 						local Try = not Selected;
-
+	
 						if Dropdown:GetActiveValues() == 1 and (not Try) and (not Info.AllowNull) then
 						else
 							if Info.Multi then
 								Selected = Try;
-
+	
 								if Selected then
 									Dropdown.Value[Value] = true;
 								else
@@ -3197,25 +3157,25 @@ do
 								end;
 							else
 								Selected = Try;
-
+	
 								if Selected then
 									Dropdown.Value = Value;
 								else
 									Dropdown.Value = nil;
 								end;
-
+	
 								for _, OtherButton in next, Buttons do
 									OtherButton:UpdateButton();
 								end;
 							end;
-
+	
 							Table:UpdateButton();
 							Dropdown:Display();
 							
 							Library:UpdateDependencyBoxes();
 							Library:SafeCallback(Dropdown.Callback, Dropdown.Value);
 							Library:SafeCallback(Dropdown.Changed, Dropdown.Value);
-
+	
 							Library:AttemptSave();
 							
 							if not Info.Multi then
@@ -3225,15 +3185,15 @@ do
 						end;
 					end;
 				end);
-
+	
 				Table:UpdateButton();
 				Dropdown:Display();
-
+	
 				Buttons[Button] = Table;
 			end;
-
+	
 			Scrolling.CanvasSize = UDim2.fromOffset(0, Count * 20);
-
+	
 			local Y = math.clamp(Count * 20, 0, MAX_DROPDOWN_ITEMS * 20) + 1;
 			if SearchBox then
 				Y = Y + 24;
@@ -3242,22 +3202,26 @@ do
 			
 			Scrolling.CanvasPosition = Vector2.new(0, 0);
 		end;
-
+	
 		if SearchBox then
 			SearchBox:GetPropertyChangedSignal('Text'):Connect(function()
 				Dropdown:BuildDropdownList(SearchBox.Text);
 			end)
 		end
-
+	
 		function Dropdown:SetValues(NewValues)
 			if NewValues then
 				Dropdown.Values = NewValues;
 			end;
-
+	
 			Dropdown:BuildDropdownList();
 		end;
-
+	
 		function Dropdown:OpenDropdown()
+			if Dropdown.isAnimating or Dropdown.isOpen then
+				return;
+			end
+			
 			if Library.IsMobile then
 				Library.CanDrag = false;
 			end;
@@ -3267,6 +3231,9 @@ do
 					OtherOption:CloseDropdown();
 				end
 			end
+			
+			Dropdown.isOpen = true;
+			Dropdown.isAnimating = true;
 			
 			RecalculateListPosition();
 			
@@ -3300,10 +3267,26 @@ do
 			Dropdown._sizeTween:Play();
 			Dropdown._arrowTween:Play();
 			
+			if Dropdown._openConnection then
+				Dropdown._openConnection:Disconnect();
+			end
+			
+			Dropdown._openConnection = Dropdown._sizeTween.Completed:Connect(function()
+				Dropdown.isAnimating = false;
+				if Dropdown._openConnection then
+					Dropdown._openConnection:Disconnect();
+					Dropdown._openConnection = nil;
+				end
+			end);
+			
 			Library.OpenedFrames[ListOuter] = true;
 		end;
 		
 		function Dropdown:CloseDropdown()
+			if Dropdown.isAnimating or not Dropdown.isOpen then
+				return;
+			end
+			
 			if Library.IsMobile then
 				Library.CanDrag = true;
 			end;
@@ -3311,6 +3294,9 @@ do
 			if SearchBox then
 				SearchBox:ReleaseFocus();
 			end
+			
+			Dropdown.isOpen = false;
+			Dropdown.isAnimating = true;
 			
 			if Dropdown._sizeTween then
 				Dropdown._sizeTween:Cancel()
@@ -3332,27 +3318,36 @@ do
 			Dropdown._sizeTween:Play();
 			Dropdown._arrowTween:Play();
 			
-			Dropdown._sizeTween.Completed:Connect(function()
+			if Dropdown._closeConnection then
+				Dropdown._closeConnection:Disconnect();
+			end
+			
+			Dropdown._closeConnection = Dropdown._sizeTween.Completed:Connect(function()
 				ListOuter.Visible = false;
 				Library.OpenedFrames[ListOuter] = nil;
+				Dropdown.isAnimating = false;
+				if Dropdown._closeConnection then
+					Dropdown._closeConnection:Disconnect();
+					Dropdown._closeConnection = nil;
+				end
 			end);
 		end;
-
+	
 		function Dropdown:OnChanged(Func)
 			Dropdown.Changed = Func;
 			Func(Dropdown.Value);
 		end;
-
+	
 		function Dropdown:SetValue(Val)
 			if Dropdown.Multi then
 				local nTable = {};
-
+	
 				for Value, Bool in next, Val do
 					if table.find(Dropdown.Values, Value) then
 						nTable[Value] = true
 					end;
 				end;
-
+	
 				Dropdown.Value = nTable;
 			else
 				if (not Val) then
@@ -3361,40 +3356,41 @@ do
 					Dropdown.Value = Val;
 				end;
 			end;
-
+	
 			Dropdown:BuildDropdownList();
-
+	
 			Library:SafeCallback(Dropdown.Callback, Dropdown.Value);
 			Library:SafeCallback(Dropdown.Changed, Dropdown.Value);
 		end;
-
+	
 		DropdownOuter.InputBegan:Connect(function(Input)
 			if (Input.UserInputType == Enum.UserInputType.MouseButton1 and not Library:MouseIsOverOpenedFrame()) or Input.UserInputType == Enum.UserInputType.Touch then
-				if ListOuter.Visible then
+				if Dropdown.isOpen then
 					Dropdown:CloseDropdown();
 				else
 					Dropdown:OpenDropdown();
 				end;
 			end;
 		end);
-
+	
 		InputService.InputBegan:Connect(function(Input)
 			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 				local AbsPos, AbsSize = ListOuter.AbsolutePosition, ListOuter.AbsoluteSize;
-
+	
 				if Mouse.X < AbsPos.X or Mouse.X > AbsPos.X + AbsSize.X
 					or Mouse.Y < (AbsPos.Y - 20 - 1) or Mouse.Y > AbsPos.Y + AbsSize.Y then
-
-					Dropdown:CloseDropdown();
+					if Dropdown.isOpen then
+						Dropdown:CloseDropdown();
+					end
 				end;
 			end;
 		end);
-
+	
 		Dropdown:BuildDropdownList();
 		Dropdown:Display();
-
+	
 		local Defaults = {}
-
+	
 		if type(Info.Default) == 'string' then
 			local Idx = table.find(Dropdown.Values, Info.Default)
 			if Idx then
@@ -3410,7 +3406,7 @@ do
 		elseif type(Info.Default) == 'number' and Dropdown.Values[Info.Default] ~= nil then
 			table.insert(Defaults, Info.Default)
 		end
-
+	
 		if next(Defaults) then
 			for i = 1, #Defaults do
 				local Index = Defaults[i]
@@ -3419,19 +3415,19 @@ do
 				else
 					Dropdown.Value = Dropdown.Values[Index];
 				end
-
+	
 				if (not Info.Multi) then break end
 			end
-
+	
 			Dropdown:BuildDropdownList();
 			Dropdown:Display();
 		end
-
+	
 		Groupbox:AddBlank(Info.BlankSize or 5);
 		Groupbox:Resize();
-
+	
 		Options[Idx] = Dropdown;
-
+	
 		return Dropdown;
 	end;
 
@@ -3757,15 +3753,6 @@ function Library:Notify(Text, Time, SoundId)
 	Library:AddToRegistry(LeftColor, {
 		BackgroundColor3 = 'AccentColor';
 	}, true);
-
-	if SoundId then
-		Library:Create('Sound', {
-			SoundId = "rbxassetid://" .. tostring(SoundId):gsub("rbxassetid://", "");
-			Volume = 3;
-			PlayOnRemove = true;
-			Parent = game:GetService("SoundService");
-		}):Destroy();
-	end
 
 	pcall(NotifyOuter.TweenSize, NotifyOuter, UDim2.new(0, XSize + 8 + 4, 0, YSize), 'Out', 'Quad', 0.4, true);
 
@@ -4738,5 +4725,5 @@ end;
 Players.PlayerAdded:Connect(OnPlayerChange);
 Players.PlayerRemoving:Connect(OnPlayerChange);
 
-getgenv().Library = Library
+getgenv().Library = Library;
 return Library;
