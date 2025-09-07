@@ -3445,6 +3445,10 @@ do
                 if (not Info.Multi) then break end
             end
 
+            if #Dropdown.Values > 10 or Dropdown.SpecialType == 'Player' then
+                Dropdown:CreateSearchBox();
+            end
+
             Dropdown:BuildDropdownList();
             Dropdown:Display();
         end
