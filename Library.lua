@@ -3304,6 +3304,10 @@ do
                     Dropdown._openConnection = nil;
                 end
             end);
+
+			if (#Dropdown.Values > 10 or Dropdown.SpecialType == 'Player') and not Dropdown.SearchBox then
+                Dropdown:CreateSearchBox();
+            end
             
             Library.OpenedFrames[ListOuter] = true;
         end;
@@ -3445,9 +3449,9 @@ do
                 if (not Info.Multi) then break end
             end
 
-            if #Dropdown.Values > 10 or Dropdown.SpecialType == 'Player' then
-                Dropdown:CreateSearchBox();
-            end
+           if Info.Multi or #Dropdown.Values > 10 or Dropdown.SpecialType == 'Player' then
+				Dropdown:CreateSearchBox();
+			end
 
             Dropdown:BuildDropdownList();
             Dropdown:Display();
